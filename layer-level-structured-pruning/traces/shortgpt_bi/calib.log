@@ -1,0 +1,331 @@
+161
+>>> batched mode: 161 prompts -> model loaded once
+>>> bin: /Users/spotted/projects/llama.cpp/build-metal/bin/llama-trace-moe
+>>> model: /Volumes/Data NVME/GLM-5.2-GGUF/GLM-5.2-shortgpt-IQ2S-experts-IQ4NL-rest/GLM-5.2-shortgpt-00001-of-00009.gguf
+>>> out dir: traces/shortgpt_bi/calib
+>>> ctx: 4096  ngl: 999  n_pred: 0  phase: prefill
+0.08.552.099 I main: n_expert_total = 256 (from GGUF KV)0.08.553.133 I run_one_prompt: [coding_01_iterative_merge_sort] prompt tokens = 20
+run_one_prompt: [coding_01_iterative_merge_sort] trace written to traces/shortgpt_bi/calib/coding_01_iterative_merge_sort-en.jsonl (3022 records, 0 dropped, 0 sampled, 1.85s)
+0.10.415.156 I run_one_prompt: [coding_01_iterative_merge_sort] prompt tokens = 30
+run_one_prompt: [coding_01_iterative_merge_sort] trace written to traces/shortgpt_bi/calib/coding_01_iterative_merge_sort-it.jsonl (4532 records, 0 dropped, 0 sampled, 1.88s)
+0.12.307.461 I run_one_prompt: [coding_01_iterative_merge_sort] prompt tokens = 23
+run_one_prompt: [coding_01_iterative_merge_sort] trace written to traces/shortgpt_bi/calib/coding_01_iterative_merge_sort-zh.jsonl (3475 records, 0 dropped, 0 sampled, 1.74s)
+0.14.057.679 I run_one_prompt: [coding_01_iterative_merge_sort] prompt tokens = 25
+run_one_prompt: [coding_01_iterative_merge_sort] trace written to traces/shortgpt_bi/calib/coding_01_iterative_merge_sort-es.jsonl (3777 records, 0 dropped, 0 sampled, 1.78s)
+0.15.843.974 I run_one_prompt: [coding_01_iterative_merge_sort] prompt tokens = 29
+run_one_prompt: [coding_01_iterative_merge_sort] trace written to traces/shortgpt_bi/calib/coding_01_iterative_merge_sort-fr.jsonl (4381 records, 0 dropped, 0 sampled, 1.88s)
+0.17.735.064 I run_one_prompt: [coding_01_iterative_merge_sort] prompt tokens = 29
+run_one_prompt: [coding_01_iterative_merge_sort] trace written to traces/shortgpt_bi/calib/coding_01_iterative_merge_sort-de.jsonl (4381 records, 0 dropped, 0 sampled, 1.91s)
+0.19.648.619 I run_one_prompt: [coding_01_iterative_merge_sort] prompt tokens = 30
+run_one_prompt: [coding_01_iterative_merge_sort] trace written to traces/shortgpt_bi/calib/coding_01_iterative_merge_sort-pt.jsonl (4532 records, 0 dropped, 0 sampled, 2.02s)
+0.21.675.870 I run_one_prompt: [coding_02_event_stream_repair] prompt tokens = 34
+run_one_prompt: [coding_02_event_stream_repair] trace written to traces/shortgpt_bi/calib/coding_02_event_stream_repair-en.jsonl (5136 records, 0 dropped, 0 sampled, 2.37s)
+0.24.056.757 I run_one_prompt: [coding_02_event_stream_repair] prompt tokens = 47
+run_one_prompt: [coding_02_event_stream_repair] trace written to traces/shortgpt_bi/calib/coding_02_event_stream_repair-it.jsonl (7099 records, 0 dropped, 0 sampled, 2.47s)
+0.26.536.477 I run_one_prompt: [coding_02_event_stream_repair] prompt tokens = 35
+run_one_prompt: [coding_02_event_stream_repair] trace written to traces/shortgpt_bi/calib/coding_02_event_stream_repair-zh.jsonl (5287 records, 0 dropped, 0 sampled, 2.38s)
+0.28.929.687 I run_one_prompt: [coding_02_event_stream_repair] prompt tokens = 43
+run_one_prompt: [coding_02_event_stream_repair] trace written to traces/shortgpt_bi/calib/coding_02_event_stream_repair-es.jsonl (6495 records, 0 dropped, 0 sampled, 2.52s)
+0.31.461.928 I run_one_prompt: [coding_02_event_stream_repair] prompt tokens = 47
+run_one_prompt: [coding_02_event_stream_repair] trace written to traces/shortgpt_bi/calib/coding_02_event_stream_repair-fr.jsonl (7099 records, 0 dropped, 0 sampled, 2.54s)
+0.34.010.214 I run_one_prompt: [coding_02_event_stream_repair] prompt tokens = 52
+run_one_prompt: [coding_02_event_stream_repair] trace written to traces/shortgpt_bi/calib/coding_02_event_stream_repair-de.jsonl (7854 records, 0 dropped, 0 sampled, 2.52s)
+0.36.543.059 I run_one_prompt: [coding_02_event_stream_repair] prompt tokens = 44
+run_one_prompt: [coding_02_event_stream_repair] trace written to traces/shortgpt_bi/calib/coding_02_event_stream_repair-pt.jsonl (6646 records, 0 dropped, 0 sampled, 2.42s)
+0.38.966.709 I run_one_prompt: [coding_03_async_queue_bug] prompt tokens = 34
+run_one_prompt: [coding_03_async_queue_bug] trace written to traces/shortgpt_bi/calib/coding_03_async_queue_bug-en.jsonl (5136 records, 0 dropped, 0 sampled, 2.37s)
+0.41.346.008 I run_one_prompt: [coding_03_async_queue_bug] prompt tokens = 54
+run_one_prompt: [coding_03_async_queue_bug] trace written to traces/shortgpt_bi/calib/coding_03_async_queue_bug-it.jsonl (8156 records, 0 dropped, 0 sampled, 2.54s)
+0.43.897.277 I run_one_prompt: [coding_03_async_queue_bug] prompt tokens = 38
+run_one_prompt: [coding_03_async_queue_bug] trace written to traces/shortgpt_bi/calib/coding_03_async_queue_bug-zh.jsonl (5740 records, 0 dropped, 0 sampled, 2.38s)
+0.46.288.533 I run_one_prompt: [coding_03_async_queue_bug] prompt tokens = 51
+run_one_prompt: [coding_03_async_queue_bug] trace written to traces/shortgpt_bi/calib/coding_03_async_queue_bug-es.jsonl (7703 records, 0 dropped, 0 sampled, 2.47s)
+0.48.764.040 I run_one_prompt: [coding_03_async_queue_bug] prompt tokens = 59
+run_one_prompt: [coding_03_async_queue_bug] trace written to traces/shortgpt_bi/calib/coding_03_async_queue_bug-fr.jsonl (8911 records, 0 dropped, 0 sampled, 2.63s)
+0.51.404.021 I run_one_prompt: [coding_03_async_queue_bug] prompt tokens = 58
+run_one_prompt: [coding_03_async_queue_bug] trace written to traces/shortgpt_bi/calib/coding_03_async_queue_bug-de.jsonl (8760 records, 0 dropped, 0 sampled, 2.71s)
+0.54.124.485 I run_one_prompt: [coding_03_async_queue_bug] prompt tokens = 51
+run_one_prompt: [coding_03_async_queue_bug] trace written to traces/shortgpt_bi/calib/coding_03_async_queue_bug-pt.jsonl (7703 records, 0 dropped, 0 sampled, 2.54s)
+0.56.670.282 I run_one_prompt: [coding_04_lru_cache] prompt tokens = 30
+run_one_prompt: [coding_04_lru_cache] trace written to traces/shortgpt_bi/calib/coding_04_lru_cache-en.jsonl (4532 records, 0 dropped, 0 sampled, 1.86s)
+0.58.533.760 I run_one_prompt: [coding_04_lru_cache] prompt tokens = 36
+run_one_prompt: [coding_04_lru_cache] trace written to traces/shortgpt_bi/calib/coding_04_lru_cache-it.jsonl (5438 records, 0 dropped, 0 sampled, 2.26s)
+1.00.801.493 I run_one_prompt: [coding_04_lru_cache] prompt tokens = 32
+run_one_prompt: [coding_04_lru_cache] trace written to traces/shortgpt_bi/calib/coding_04_lru_cache-zh.jsonl (4834 records, 0 dropped, 0 sampled, 2.24s)
+1.03.052.576 I run_one_prompt: [coding_04_lru_cache] prompt tokens = 40
+run_one_prompt: [coding_04_lru_cache] trace written to traces/shortgpt_bi/calib/coding_04_lru_cache-es.jsonl (6042 records, 0 dropped, 0 sampled, 2.34s)
+1.05.404.821 I run_one_prompt: [coding_04_lru_cache] prompt tokens = 38
+run_one_prompt: [coding_04_lru_cache] trace written to traces/shortgpt_bi/calib/coding_04_lru_cache-fr.jsonl (5740 records, 0 dropped, 0 sampled, 2.28s)
+1.07.689.438 I run_one_prompt: [coding_04_lru_cache] prompt tokens = 40
+run_one_prompt: [coding_04_lru_cache] trace written to traces/shortgpt_bi/calib/coding_04_lru_cache-de.jsonl (6042 records, 0 dropped, 0 sampled, 2.35s)
+1.10.043.448 I run_one_prompt: [coding_04_lru_cache] prompt tokens = 36
+run_one_prompt: [coding_04_lru_cache] trace written to traces/shortgpt_bi/calib/coding_04_lru_cache-pt.jsonl (5438 records, 0 dropped, 0 sampled, 2.30s)
+1.12.355.348 I run_one_prompt: [math_01_linear_system] prompt tokens = 30
+run_one_prompt: [math_01_linear_system] trace written to traces/shortgpt_bi/calib/math_01_linear_system-en.jsonl (4532 records, 0 dropped, 0 sampled, 1.90s)
+1.14.262.343 I run_one_prompt: [math_01_linear_system] prompt tokens = 36
+run_one_prompt: [math_01_linear_system] trace written to traces/shortgpt_bi/calib/math_01_linear_system-it.jsonl (5438 records, 0 dropped, 0 sampled, 2.35s)
+1.16.618.277 I run_one_prompt: [math_01_linear_system] prompt tokens = 28
+run_one_prompt: [math_01_linear_system] trace written to traces/shortgpt_bi/calib/math_01_linear_system-zh.jsonl (4230 records, 0 dropped, 0 sampled, 1.90s)
+1.18.528.478 I run_one_prompt: [math_01_linear_system] prompt tokens = 32
+run_one_prompt: [math_01_linear_system] trace written to traces/shortgpt_bi/calib/math_01_linear_system-es.jsonl (4834 records, 0 dropped, 0 sampled, 2.25s)
+1.20.782.753 I run_one_prompt: [math_01_linear_system] prompt tokens = 34
+run_one_prompt: [math_01_linear_system] trace written to traces/shortgpt_bi/calib/math_01_linear_system-fr.jsonl (5136 records, 0 dropped, 0 sampled, 2.31s)
+1.23.101.810 I run_one_prompt: [math_01_linear_system] prompt tokens = 35
+run_one_prompt: [math_01_linear_system] trace written to traces/shortgpt_bi/calib/math_01_linear_system-de.jsonl (5287 records, 0 dropped, 0 sampled, 2.32s)
+1.25.434.190 I run_one_prompt: [math_01_linear_system] prompt tokens = 35
+run_one_prompt: [math_01_linear_system] trace written to traces/shortgpt_bi/calib/math_01_linear_system-pt.jsonl (5287 records, 0 dropped, 0 sampled, 2.37s)
+1.27.807.708 I run_one_prompt: [math_02_bayes] prompt tokens = 37
+run_one_prompt: [math_02_bayes] trace written to traces/shortgpt_bi/calib/math_02_bayes-en.jsonl (5589 records, 0 dropped, 0 sampled, 2.41s)
+1.30.230.722 I run_one_prompt: [math_02_bayes] prompt tokens = 49
+run_one_prompt: [math_02_bayes] trace written to traces/shortgpt_bi/calib/math_02_bayes-it.jsonl (7401 records, 0 dropped, 0 sampled, 2.49s)
+1.32.728.830 I run_one_prompt: [math_02_bayes] prompt tokens = 34
+run_one_prompt: [math_02_bayes] trace written to traces/shortgpt_bi/calib/math_02_bayes-zh.jsonl (5136 records, 0 dropped, 0 sampled, 2.31s)
+1.35.050.754 I run_one_prompt: [math_02_bayes] prompt tokens = 48
+run_one_prompt: [math_02_bayes] trace written to traces/shortgpt_bi/calib/math_02_bayes-es.jsonl (7250 records, 0 dropped, 0 sampled, 2.48s)
+1.37.536.222 I run_one_prompt: [math_02_bayes] prompt tokens = 48
+run_one_prompt: [math_02_bayes] trace written to traces/shortgpt_bi/calib/math_02_bayes-fr.jsonl (7250 records, 0 dropped, 0 sampled, 2.46s)
+1.40.007.218 I run_one_prompt: [math_02_bayes] prompt tokens = 54
+run_one_prompt: [math_02_bayes] trace written to traces/shortgpt_bi/calib/math_02_bayes-de.jsonl (8156 records, 0 dropped, 0 sampled, 2.52s)
+1.42.538.022 I run_one_prompt: [math_02_bayes] prompt tokens = 46
+run_one_prompt: [math_02_bayes] trace written to traces/shortgpt_bi/calib/math_02_bayes-pt.jsonl (6948 records, 0 dropped, 0 sampled, 2.42s)
+1.44.971.199 I run_one_prompt: [math_03_eigenvalues] prompt tokens = 31
+run_one_prompt: [math_03_eigenvalues] trace written to traces/shortgpt_bi/calib/math_03_eigenvalues-en.jsonl (4683 records, 0 dropped, 0 sampled, 2.10s)
+1.47.075.665 I run_one_prompt: [math_03_eigenvalues] prompt tokens = 38
+run_one_prompt: [math_03_eigenvalues] trace written to traces/shortgpt_bi/calib/math_03_eigenvalues-it.jsonl (5740 records, 0 dropped, 0 sampled, 2.47s)
+1.49.556.907 I run_one_prompt: [math_03_eigenvalues] prompt tokens = 27
+run_one_prompt: [math_03_eigenvalues] trace written to traces/shortgpt_bi/calib/math_03_eigenvalues-zh.jsonl (4079 records, 0 dropped, 0 sampled, 1.91s)
+1.51.476.016 I run_one_prompt: [math_03_eigenvalues] prompt tokens = 35
+run_one_prompt: [math_03_eigenvalues] trace written to traces/shortgpt_bi/calib/math_03_eigenvalues-es.jsonl (5287 records, 0 dropped, 0 sampled, 2.37s)
+1.53.849.621 I run_one_prompt: [math_03_eigenvalues] prompt tokens = 38
+run_one_prompt: [math_03_eigenvalues] trace written to traces/shortgpt_bi/calib/math_03_eigenvalues-fr.jsonl (5740 records, 0 dropped, 0 sampled, 2.41s)
+1.56.263.689 I run_one_prompt: [math_03_eigenvalues] prompt tokens = 35
+run_one_prompt: [math_03_eigenvalues] trace written to traces/shortgpt_bi/calib/math_03_eigenvalues-de.jsonl (5287 records, 0 dropped, 0 sampled, 2.36s)
+1.58.631.842 I run_one_prompt: [math_03_eigenvalues] prompt tokens = 38
+run_one_prompt: [math_03_eigenvalues] trace written to traces/shortgpt_bi/calib/math_03_eigenvalues-pt.jsonl (5740 records, 0 dropped, 0 sampled, 2.33s)
+2.00.974.679 I run_one_prompt: [physics_01_projectile] prompt tokens = 29
+run_one_prompt: [physics_01_projectile] trace written to traces/shortgpt_bi/calib/physics_01_projectile-en.jsonl (4381 records, 0 dropped, 0 sampled, 1.87s)
+2.02.851.808 I run_one_prompt: [physics_01_projectile] prompt tokens = 58
+run_one_prompt: [physics_01_projectile] trace written to traces/shortgpt_bi/calib/physics_01_projectile-it.jsonl (8760 records, 0 dropped, 0 sampled, 2.57s)
+2.05.433.943 I run_one_prompt: [physics_01_projectile] prompt tokens = 30
+run_one_prompt: [physics_01_projectile] trace written to traces/shortgpt_bi/calib/physics_01_projectile-zh.jsonl (4532 records, 0 dropped, 0 sampled, 1.89s)
+2.07.326.493 I run_one_prompt: [physics_01_projectile] prompt tokens = 46
+run_one_prompt: [physics_01_projectile] trace written to traces/shortgpt_bi/calib/physics_01_projectile-es.jsonl (6948 records, 0 dropped, 0 sampled, 2.43s)
+2.09.766.064 I run_one_prompt: [physics_01_projectile] prompt tokens = 59
+run_one_prompt: [physics_01_projectile] trace written to traces/shortgpt_bi/calib/physics_01_projectile-fr.jsonl (8911 records, 0 dropped, 0 sampled, 2.61s)
+2.12.384.217 I run_one_prompt: [physics_01_projectile] prompt tokens = 55
+run_one_prompt: [physics_01_projectile] trace written to traces/shortgpt_bi/calib/physics_01_projectile-de.jsonl (8307 records, 0 dropped, 0 sampled, 2.60s)
+2.14.993.706 I run_one_prompt: [physics_01_projectile] prompt tokens = 45
+run_one_prompt: [physics_01_projectile] trace written to traces/shortgpt_bi/calib/physics_01_projectile-pt.jsonl (6797 records, 0 dropped, 0 sampled, 2.46s)
+2.17.463.093 I run_one_prompt: [physics_02_energy_pendulum] prompt tokens = 25
+run_one_prompt: [physics_02_energy_pendulum] trace written to traces/shortgpt_bi/calib/physics_02_energy_pendulum-en.jsonl (3777 records, 0 dropped, 0 sampled, 1.90s)
+2.19.367.998 I run_one_prompt: [physics_02_energy_pendulum] prompt tokens = 43
+run_one_prompt: [physics_02_energy_pendulum] trace written to traces/shortgpt_bi/calib/physics_02_energy_pendulum-it.jsonl (6495 records, 0 dropped, 0 sampled, 2.41s)
+2.21.788.963 I run_one_prompt: [physics_02_energy_pendulum] prompt tokens = 17
+run_one_prompt: [physics_02_energy_pendulum] trace written to traces/shortgpt_bi/calib/physics_02_energy_pendulum-zh.jsonl (2569 records, 0 dropped, 0 sampled, 1.67s)
+2.23.468.058 I run_one_prompt: [physics_02_energy_pendulum] prompt tokens = 37
+run_one_prompt: [physics_02_energy_pendulum] trace written to traces/shortgpt_bi/calib/physics_02_energy_pendulum-es.jsonl (5589 records, 0 dropped, 0 sampled, 2.30s)
+2.25.774.971 I run_one_prompt: [physics_02_energy_pendulum] prompt tokens = 38
+run_one_prompt: [physics_02_energy_pendulum] trace written to traces/shortgpt_bi/calib/physics_02_energy_pendulum-fr.jsonl (5740 records, 0 dropped, 0 sampled, 2.37s)
+2.28.158.184 I run_one_prompt: [physics_02_energy_pendulum] prompt tokens = 41
+run_one_prompt: [physics_02_energy_pendulum] trace written to traces/shortgpt_bi/calib/physics_02_energy_pendulum-de.jsonl (6193 records, 0 dropped, 0 sampled, 2.42s)
+2.30.583.170 I run_one_prompt: [physics_02_energy_pendulum] prompt tokens = 41
+run_one_prompt: [physics_02_energy_pendulum] trace written to traces/shortgpt_bi/calib/physics_02_energy_pendulum-pt.jsonl (6193 records, 0 dropped, 0 sampled, 2.43s)
+2.33.017.343 I run_one_prompt: [physics_03_rc_circuit] prompt tokens = 35
+run_one_prompt: [physics_03_rc_circuit] trace written to traces/shortgpt_bi/calib/physics_03_rc_circuit-en.jsonl (5287 records, 0 dropped, 0 sampled, 2.33s)
+2.35.351.952 I run_one_prompt: [physics_03_rc_circuit] prompt tokens = 45
+run_one_prompt: [physics_03_rc_circuit] trace written to traces/shortgpt_bi/calib/physics_03_rc_circuit-it.jsonl (6797 records, 0 dropped, 0 sampled, 2.43s)
+2.37.793.099 I run_one_prompt: [physics_03_rc_circuit] prompt tokens = 35
+run_one_prompt: [physics_03_rc_circuit] trace written to traces/shortgpt_bi/calib/physics_03_rc_circuit-zh.jsonl (5287 records, 0 dropped, 0 sampled, 2.38s)
+2.40.182.300 I run_one_prompt: [physics_03_rc_circuit] prompt tokens = 44
+run_one_prompt: [physics_03_rc_circuit] trace written to traces/shortgpt_bi/calib/physics_03_rc_circuit-es.jsonl (6646 records, 0 dropped, 0 sampled, 2.44s)
+2.42.625.954 I run_one_prompt: [physics_03_rc_circuit] prompt tokens = 41
+run_one_prompt: [physics_03_rc_circuit] trace written to traces/shortgpt_bi/calib/physics_03_rc_circuit-fr.jsonl (6193 records, 0 dropped, 0 sampled, 2.34s)
+2.44.975.609 I run_one_prompt: [physics_03_rc_circuit] prompt tokens = 45
+run_one_prompt: [physics_03_rc_circuit] trace written to traces/shortgpt_bi/calib/physics_03_rc_circuit-de.jsonl (6797 records, 0 dropped, 0 sampled, 2.44s)
+2.47.419.936 I run_one_prompt: [physics_03_rc_circuit] prompt tokens = 43
+run_one_prompt: [physics_03_rc_circuit] trace written to traces/shortgpt_bi/calib/physics_03_rc_circuit-pt.jsonl (6495 records, 0 dropped, 0 sampled, 2.43s)
+2.49.860.112 I run_one_prompt: [physics_04_thermodynamics] prompt tokens = 17
+run_one_prompt: [physics_04_thermodynamics] trace written to traces/shortgpt_bi/calib/physics_04_thermodynamics-en.jsonl (2569 records, 0 dropped, 0 sampled, 1.80s)
+2.51.672.526 I run_one_prompt: [physics_04_thermodynamics] prompt tokens = 19
+run_one_prompt: [physics_04_thermodynamics] trace written to traces/shortgpt_bi/calib/physics_04_thermodynamics-it.jsonl (2871 records, 0 dropped, 0 sampled, 1.81s)
+2.53.490.570 I run_one_prompt: [physics_04_thermodynamics] prompt tokens = 13
+run_one_prompt: [physics_04_thermodynamics] trace written to traces/shortgpt_bi/calib/physics_04_thermodynamics-zh.jsonl (1965 records, 0 dropped, 0 sampled, 1.61s)
+2.55.105.014 I run_one_prompt: [physics_04_thermodynamics] prompt tokens = 17
+run_one_prompt: [physics_04_thermodynamics] trace written to traces/shortgpt_bi/calib/physics_04_thermodynamics-es.jsonl (2569 records, 0 dropped, 0 sampled, 1.74s)
+2.56.848.817 I run_one_prompt: [physics_04_thermodynamics] prompt tokens = 21
+run_one_prompt: [physics_04_thermodynamics] trace written to traces/shortgpt_bi/calib/physics_04_thermodynamics-fr.jsonl (3173 records, 0 dropped, 0 sampled, 1.72s)
+2.58.581.630 I run_one_prompt: [physics_04_thermodynamics] prompt tokens = 21
+run_one_prompt: [physics_04_thermodynamics] trace written to traces/shortgpt_bi/calib/physics_04_thermodynamics-de.jsonl (3173 records, 0 dropped, 0 sampled, 1.76s)
+3.00.345.249 I run_one_prompt: [physics_04_thermodynamics] prompt tokens = 20
+run_one_prompt: [physics_04_thermodynamics] trace written to traces/shortgpt_bi/calib/physics_04_thermodynamics-pt.jsonl (3022 records, 0 dropped, 0 sampled, 1.84s)
+3.02.192.857 I run_one_prompt: [engineering_01_safety_factor] prompt tokens = 41
+run_one_prompt: [engineering_01_safety_factor] trace written to traces/shortgpt_bi/calib/engineering_01_safety_factor-en.jsonl (6193 records, 0 dropped, 0 sampled, 2.47s)
+3.04.675.883 I run_one_prompt: [engineering_01_safety_factor] prompt tokens = 57
+run_one_prompt: [engineering_01_safety_factor] trace written to traces/shortgpt_bi/calib/engineering_01_safety_factor-it.jsonl (8609 records, 0 dropped, 0 sampled, 2.55s)
+3.07.236.036 I run_one_prompt: [engineering_01_safety_factor] prompt tokens = 38
+run_one_prompt: [engineering_01_safety_factor] trace written to traces/shortgpt_bi/calib/engineering_01_safety_factor-zh.jsonl (5740 records, 0 dropped, 0 sampled, 2.35s)
+3.09.597.603 I run_one_prompt: [engineering_01_safety_factor] prompt tokens = 54
+run_one_prompt: [engineering_01_safety_factor] trace written to traces/shortgpt_bi/calib/engineering_01_safety_factor-es.jsonl (8156 records, 0 dropped, 0 sampled, 2.54s)
+3.12.143.613 I run_one_prompt: [engineering_01_safety_factor] prompt tokens = 54
+run_one_prompt: [engineering_01_safety_factor] trace written to traces/shortgpt_bi/calib/engineering_01_safety_factor-fr.jsonl (8156 records, 0 dropped, 0 sampled, 2.53s)
+3.14.681.306 I run_one_prompt: [engineering_01_safety_factor] prompt tokens = 54
+run_one_prompt: [engineering_01_safety_factor] trace written to traces/shortgpt_bi/calib/engineering_01_safety_factor-de.jsonl (8156 records, 0 dropped, 0 sampled, 2.49s)
+3.17.178.263 I run_one_prompt: [engineering_01_safety_factor] prompt tokens = 54
+run_one_prompt: [engineering_01_safety_factor] trace written to traces/shortgpt_bi/calib/engineering_01_safety_factor-pt.jsonl (8156 records, 0 dropped, 0 sampled, 2.50s)
+3.19.692.062 I run_one_prompt: [engineering_02_heat_sink] prompt tokens = 30
+run_one_prompt: [engineering_02_heat_sink] trace written to traces/shortgpt_bi/calib/engineering_02_heat_sink-en.jsonl (4532 records, 0 dropped, 0 sampled, 1.91s)
+3.21.611.029 I run_one_prompt: [engineering_02_heat_sink] prompt tokens = 45
+run_one_prompt: [engineering_02_heat_sink] trace written to traces/shortgpt_bi/calib/engineering_02_heat_sink-it.jsonl (6797 records, 0 dropped, 0 sampled, 2.44s)
+3.24.061.026 I run_one_prompt: [engineering_02_heat_sink] prompt tokens = 28
+run_one_prompt: [engineering_02_heat_sink] trace written to traces/shortgpt_bi/calib/engineering_02_heat_sink-zh.jsonl (4230 records, 0 dropped, 0 sampled, 1.88s)
+3.25.953.563 I run_one_prompt: [engineering_02_heat_sink] prompt tokens = 37
+run_one_prompt: [engineering_02_heat_sink] trace written to traces/shortgpt_bi/calib/engineering_02_heat_sink-es.jsonl (5589 records, 0 dropped, 0 sampled, 2.30s)
+3.28.262.714 I run_one_prompt: [engineering_02_heat_sink] prompt tokens = 43
+run_one_prompt: [engineering_02_heat_sink] trace written to traces/shortgpt_bi/calib/engineering_02_heat_sink-fr.jsonl (6495 records, 0 dropped, 0 sampled, 2.43s)
+3.30.701.977 I run_one_prompt: [engineering_02_heat_sink] prompt tokens = 49
+run_one_prompt: [engineering_02_heat_sink] trace written to traces/shortgpt_bi/calib/engineering_02_heat_sink-de.jsonl (7401 records, 0 dropped, 0 sampled, 2.54s)
+3.33.250.915 I run_one_prompt: [engineering_02_heat_sink] prompt tokens = 38
+run_one_prompt: [engineering_02_heat_sink] trace written to traces/shortgpt_bi/calib/engineering_02_heat_sink-pt.jsonl (5740 records, 0 dropped, 0 sampled, 2.32s)
+3.35.582.980 I run_one_prompt: [engineering_03_control_loop] prompt tokens = 27
+run_one_prompt: [engineering_03_control_loop] trace written to traces/shortgpt_bi/calib/engineering_03_control_loop-en.jsonl (4079 records, 0 dropped, 0 sampled, 1.83s)
+3.37.416.271 I run_one_prompt: [engineering_03_control_loop] prompt tokens = 40
+run_one_prompt: [engineering_03_control_loop] trace written to traces/shortgpt_bi/calib/engineering_03_control_loop-it.jsonl (6042 records, 0 dropped, 0 sampled, 2.38s)
+3.39.804.844 I run_one_prompt: [engineering_03_control_loop] prompt tokens = 26
+run_one_prompt: [engineering_03_control_loop] trace written to traces/shortgpt_bi/calib/engineering_03_control_loop-zh.jsonl (3928 records, 0 dropped, 0 sampled, 1.88s)
+3.41.687.841 I run_one_prompt: [engineering_03_control_loop] prompt tokens = 43
+run_one_prompt: [engineering_03_control_loop] trace written to traces/shortgpt_bi/calib/engineering_03_control_loop-es.jsonl (6495 records, 0 dropped, 0 sampled, 2.46s)
+3.44.156.577 I run_one_prompt: [engineering_03_control_loop] prompt tokens = 42
+run_one_prompt: [engineering_03_control_loop] trace written to traces/shortgpt_bi/calib/engineering_03_control_loop-fr.jsonl (6344 records, 0 dropped, 0 sampled, 2.41s)
+3.46.572.179 I run_one_prompt: [engineering_03_control_loop] prompt tokens = 43
+run_one_prompt: [engineering_03_control_loop] trace written to traces/shortgpt_bi/calib/engineering_03_control_loop-de.jsonl (6495 records, 0 dropped, 0 sampled, 2.44s)
+3.49.020.379 I run_one_prompt: [engineering_03_control_loop] prompt tokens = 38
+run_one_prompt: [engineering_03_control_loop] trace written to traces/shortgpt_bi/calib/engineering_03_control_loop-pt.jsonl (5740 records, 0 dropped, 0 sampled, 2.40s)
+3.51.425.025 I run_one_prompt: [cs_01_complexity] prompt tokens = 27
+run_one_prompt: [cs_01_complexity] trace written to traces/shortgpt_bi/calib/cs_01_complexity-en.jsonl (4079 records, 0 dropped, 0 sampled, 1.86s)
+3.53.290.815 I run_one_prompt: [cs_01_complexity] prompt tokens = 41
+run_one_prompt: [cs_01_complexity] trace written to traces/shortgpt_bi/calib/cs_01_complexity-it.jsonl (6193 records, 0 dropped, 0 sampled, 2.41s)
+3.55.708.974 I run_one_prompt: [cs_01_complexity] prompt tokens = 26
+run_one_prompt: [cs_01_complexity] trace written to traces/shortgpt_bi/calib/cs_01_complexity-zh.jsonl (3928 records, 0 dropped, 0 sampled, 1.83s)
+3.57.544.567 I run_one_prompt: [cs_01_complexity] prompt tokens = 38
+run_one_prompt: [cs_01_complexity] trace written to traces/shortgpt_bi/calib/cs_01_complexity-es.jsonl (5740 records, 0 dropped, 0 sampled, 2.29s)
+3.59.846.348 I run_one_prompt: [cs_01_complexity] prompt tokens = 38
+run_one_prompt: [cs_01_complexity] trace written to traces/shortgpt_bi/calib/cs_01_complexity-fr.jsonl (5740 records, 0 dropped, 0 sampled, 2.29s)
+4.02.148.075 I run_one_prompt: [cs_01_complexity] prompt tokens = 39
+run_one_prompt: [cs_01_complexity] trace written to traces/shortgpt_bi/calib/cs_01_complexity-de.jsonl (5891 records, 0 dropped, 0 sampled, 2.40s)
+4.04.553.822 I run_one_prompt: [cs_01_complexity] prompt tokens = 38
+run_one_prompt: [cs_01_complexity] trace written to traces/shortgpt_bi/calib/cs_01_complexity-pt.jsonl (5740 records, 0 dropped, 0 sampled, 2.36s)
+4.06.924.336 I run_one_prompt: [cs_02_database_transactions] prompt tokens = 22
+run_one_prompt: [cs_02_database_transactions] trace written to traces/shortgpt_bi/calib/cs_02_database_transactions-en.jsonl (3324 records, 0 dropped, 0 sampled, 1.85s)
+4.08.785.989 I run_one_prompt: [cs_02_database_transactions] prompt tokens = 35
+run_one_prompt: [cs_02_database_transactions] trace written to traces/shortgpt_bi/calib/cs_02_database_transactions-it.jsonl (5287 records, 0 dropped, 0 sampled, 2.29s)
+4.11.088.236 I run_one_prompt: [cs_02_database_transactions] prompt tokens = 23
+run_one_prompt: [cs_02_database_transactions] trace written to traces/shortgpt_bi/calib/cs_02_database_transactions-zh.jsonl (3475 records, 0 dropped, 0 sampled, 1.79s)
+4.12.881.135 I run_one_prompt: [cs_02_database_transactions] prompt tokens = 36
+run_one_prompt: [cs_02_database_transactions] trace written to traces/shortgpt_bi/calib/cs_02_database_transactions-es.jsonl (5438 records, 0 dropped, 0 sampled, 2.39s)
+4.15.278.194 I run_one_prompt: [cs_02_database_transactions] prompt tokens = 35
+run_one_prompt: [cs_02_database_transactions] trace written to traces/shortgpt_bi/calib/cs_02_database_transactions-fr.jsonl (5287 records, 0 dropped, 0 sampled, 2.34s)
+4.17.628.162 I run_one_prompt: [cs_02_database_transactions] prompt tokens = 38
+run_one_prompt: [cs_02_database_transactions] trace written to traces/shortgpt_bi/calib/cs_02_database_transactions-de.jsonl (5740 records, 0 dropped, 0 sampled, 2.36s)
+4.19.997.211 I run_one_prompt: [cs_02_database_transactions] prompt tokens = 36
+run_one_prompt: [cs_02_database_transactions] trace written to traces/shortgpt_bi/calib/cs_02_database_transactions-pt.jsonl (5438 records, 0 dropped, 0 sampled, 2.28s)
+4.22.289.560 I run_one_prompt: [cs_03_raft_consensus] prompt tokens = 22
+run_one_prompt: [cs_03_raft_consensus] trace written to traces/shortgpt_bi/calib/cs_03_raft_consensus-en.jsonl (3324 records, 0 dropped, 0 sampled, 1.84s)
+4.24.139.445 I run_one_prompt: [cs_03_raft_consensus] prompt tokens = 23
+run_one_prompt: [cs_03_raft_consensus] trace written to traces/shortgpt_bi/calib/cs_03_raft_consensus-it.jsonl (3475 records, 0 dropped, 0 sampled, 1.79s)
+4.25.939.499 I run_one_prompt: [cs_03_raft_consensus] prompt tokens = 19
+run_one_prompt: [cs_03_raft_consensus] trace written to traces/shortgpt_bi/calib/cs_03_raft_consensus-zh.jsonl (2871 records, 0 dropped, 0 sampled, 1.73s)
+4.27.681.266 I run_one_prompt: [cs_03_raft_consensus] prompt tokens = 26
+run_one_prompt: [cs_03_raft_consensus] trace written to traces/shortgpt_bi/calib/cs_03_raft_consensus-es.jsonl (3928 records, 0 dropped, 0 sampled, 1.88s)
+4.29.569.289 I run_one_prompt: [cs_03_raft_consensus] prompt tokens = 26
+run_one_prompt: [cs_03_raft_consensus] trace written to traces/shortgpt_bi/calib/cs_03_raft_consensus-fr.jsonl (3928 records, 0 dropped, 0 sampled, 1.80s)
+4.31.373.142 I run_one_prompt: [cs_03_raft_consensus] prompt tokens = 26
+run_one_prompt: [cs_03_raft_consensus] trace written to traces/shortgpt_bi/calib/cs_03_raft_consensus-de.jsonl (3928 records, 0 dropped, 0 sampled, 1.79s)
+4.33.173.051 I run_one_prompt: [cs_03_raft_consensus] prompt tokens = 23
+run_one_prompt: [cs_03_raft_consensus] trace written to traces/shortgpt_bi/calib/cs_03_raft_consensus-pt.jsonl (3475 records, 0 dropped, 0 sampled, 1.88s)
+4.35.060.598 I run_one_prompt: [chemistry_01_balancing] prompt tokens = 26
+run_one_prompt: [chemistry_01_balancing] trace written to traces/shortgpt_bi/calib/chemistry_01_balancing-en.jsonl (3928 records, 0 dropped, 0 sampled, 2.00s)
+4.37.067.050 I run_one_prompt: [chemistry_01_balancing] prompt tokens = 36
+run_one_prompt: [chemistry_01_balancing] trace written to traces/shortgpt_bi/calib/chemistry_01_balancing-it.jsonl (5438 records, 0 dropped, 0 sampled, 2.32s)
+4.39.397.878 I run_one_prompt: [chemistry_01_balancing] prompt tokens = 29
+run_one_prompt: [chemistry_01_balancing] trace written to traces/shortgpt_bi/calib/chemistry_01_balancing-zh.jsonl (4381 records, 0 dropped, 0 sampled, 1.96s)
+4.41.368.912 I run_one_prompt: [chemistry_01_balancing] prompt tokens = 34
+run_one_prompt: [chemistry_01_balancing] trace written to traces/shortgpt_bi/calib/chemistry_01_balancing-es.jsonl (5136 records, 0 dropped, 0 sampled, 2.20s)
+4.43.578.590 I run_one_prompt: [chemistry_01_balancing] prompt tokens = 37
+run_one_prompt: [chemistry_01_balancing] trace written to traces/shortgpt_bi/calib/chemistry_01_balancing-fr.jsonl (5589 records, 0 dropped, 0 sampled, 2.31s)
+4.45.894.691 I run_one_prompt: [chemistry_01_balancing] prompt tokens = 38
+run_one_prompt: [chemistry_01_balancing] trace written to traces/shortgpt_bi/calib/chemistry_01_balancing-de.jsonl (5740 records, 0 dropped, 0 sampled, 2.40s)
+4.48.303.322 I run_one_prompt: [chemistry_01_balancing] prompt tokens = 32
+run_one_prompt: [chemistry_01_balancing] trace written to traces/shortgpt_bi/calib/chemistry_01_balancing-pt.jsonl (4834 records, 0 dropped, 0 sampled, 2.31s)
+4.50.617.039 I run_one_prompt: [chemistry_02_buffer_ph] prompt tokens = 35
+run_one_prompt: [chemistry_02_buffer_ph] trace written to traces/shortgpt_bi/calib/chemistry_02_buffer_ph-en.jsonl (5287 records, 0 dropped, 0 sampled, 2.49s)
+4.53.113.894 I run_one_prompt: [chemistry_02_buffer_ph] prompt tokens = 41
+run_one_prompt: [chemistry_02_buffer_ph] trace written to traces/shortgpt_bi/calib/chemistry_02_buffer_ph-it.jsonl (6193 records, 0 dropped, 0 sampled, 2.60s)
+4.55.724.027 I run_one_prompt: [chemistry_02_buffer_ph] prompt tokens = 33
+run_one_prompt: [chemistry_02_buffer_ph] trace written to traces/shortgpt_bi/calib/chemistry_02_buffer_ph-zh.jsonl (4985 records, 0 dropped, 0 sampled, 2.31s)
+4.58.040.732 I run_one_prompt: [chemistry_02_buffer_ph] prompt tokens = 41
+run_one_prompt: [chemistry_02_buffer_ph] trace written to traces/shortgpt_bi/calib/chemistry_02_buffer_ph-es.jsonl (6193 records, 0 dropped, 0 sampled, 2.44s)
+5.00.489.673 I run_one_prompt: [chemistry_02_buffer_ph] prompt tokens = 41
+run_one_prompt: [chemistry_02_buffer_ph] trace written to traces/shortgpt_bi/calib/chemistry_02_buffer_ph-fr.jsonl (6193 records, 0 dropped, 0 sampled, 2.39s)
+5.02.882.990 I run_one_prompt: [chemistry_02_buffer_ph] prompt tokens = 45
+run_one_prompt: [chemistry_02_buffer_ph] trace written to traces/shortgpt_bi/calib/chemistry_02_buffer_ph-de.jsonl (6797 records, 0 dropped, 0 sampled, 2.43s)
+5.05.324.585 I run_one_prompt: [chemistry_02_buffer_ph] prompt tokens = 39
+run_one_prompt: [chemistry_02_buffer_ph] trace written to traces/shortgpt_bi/calib/chemistry_02_buffer_ph-pt.jsonl (5891 records, 0 dropped, 0 sampled, 2.44s)
+5.07.773.040 I run_one_prompt: [chemistry_03_reaction_rate] prompt tokens = 18
+run_one_prompt: [chemistry_03_reaction_rate] trace written to traces/shortgpt_bi/calib/chemistry_03_reaction_rate-en.jsonl (2720 records, 0 dropped, 0 sampled, 1.80s)
+5.09.583.737 I run_one_prompt: [chemistry_03_reaction_rate] prompt tokens = 32
+run_one_prompt: [chemistry_03_reaction_rate] trace written to traces/shortgpt_bi/calib/chemistry_03_reaction_rate-it.jsonl (4834 records, 0 dropped, 0 sampled, 2.25s)
+5.11.841.506 I run_one_prompt: [chemistry_03_reaction_rate] prompt tokens = 16
+run_one_prompt: [chemistry_03_reaction_rate] trace written to traces/shortgpt_bi/calib/chemistry_03_reaction_rate-zh.jsonl (2418 records, 0 dropped, 0 sampled, 1.69s)
+5.13.537.308 I run_one_prompt: [chemistry_03_reaction_rate] prompt tokens = 28
+run_one_prompt: [chemistry_03_reaction_rate] trace written to traces/shortgpt_bi/calib/chemistry_03_reaction_rate-es.jsonl (4230 records, 0 dropped, 0 sampled, 1.88s)
+5.15.423.122 I run_one_prompt: [chemistry_03_reaction_rate] prompt tokens = 34
+run_one_prompt: [chemistry_03_reaction_rate] trace written to traces/shortgpt_bi/calib/chemistry_03_reaction_rate-fr.jsonl (5136 records, 0 dropped, 0 sampled, 2.26s)
+5.17.695.334 I run_one_prompt: [chemistry_03_reaction_rate] prompt tokens = 36
+run_one_prompt: [chemistry_03_reaction_rate] trace written to traces/shortgpt_bi/calib/chemistry_03_reaction_rate-de.jsonl (5438 records, 0 dropped, 0 sampled, 2.38s)
+5.20.082.822 I run_one_prompt: [chemistry_03_reaction_rate] prompt tokens = 29
+run_one_prompt: [chemistry_03_reaction_rate] trace written to traces/shortgpt_bi/calib/chemistry_03_reaction_rate-pt.jsonl (4381 records, 0 dropped, 0 sampled, 2.00s)
+5.22.089.223 I run_one_prompt: [cybersecurity_01_phishing_triage] prompt tokens = 30
+run_one_prompt: [cybersecurity_01_phishing_triage] trace written to traces/shortgpt_bi/calib/cybersecurity_01_phishing_triage-en.jsonl (4532 records, 0 dropped, 0 sampled, 1.90s)
+5.23.997.726 I run_one_prompt: [cybersecurity_01_phishing_triage] prompt tokens = 40
+run_one_prompt: [cybersecurity_01_phishing_triage] trace written to traces/shortgpt_bi/calib/cybersecurity_01_phishing_triage-it.jsonl (6042 records, 0 dropped, 0 sampled, 2.33s)
+5.26.340.348 I run_one_prompt: [cybersecurity_01_phishing_triage] prompt tokens = 30
+run_one_prompt: [cybersecurity_01_phishing_triage] trace written to traces/shortgpt_bi/calib/cybersecurity_01_phishing_triage-zh.jsonl (4532 records, 0 dropped, 0 sampled, 2.00s)
+5.28.348.490 I run_one_prompt: [cybersecurity_01_phishing_triage] prompt tokens = 39
+run_one_prompt: [cybersecurity_01_phishing_triage] trace written to traces/shortgpt_bi/calib/cybersecurity_01_phishing_triage-es.jsonl (5891 records, 0 dropped, 0 sampled, 2.34s)
+5.30.700.456 I run_one_prompt: [cybersecurity_01_phishing_triage] prompt tokens = 42
+run_one_prompt: [cybersecurity_01_phishing_triage] trace written to traces/shortgpt_bi/calib/cybersecurity_01_phishing_triage-fr.jsonl (6344 records, 0 dropped, 0 sampled, 2.34s)
+5.33.050.210 I run_one_prompt: [cybersecurity_01_phishing_triage] prompt tokens = 50
+run_one_prompt: [cybersecurity_01_phishing_triage] trace written to traces/shortgpt_bi/calib/cybersecurity_01_phishing_triage-de.jsonl (7552 records, 0 dropped, 0 sampled, 2.47s)
+5.35.524.660 I run_one_prompt: [cybersecurity_01_phishing_triage] prompt tokens = 42
+run_one_prompt: [cybersecurity_01_phishing_triage] trace written to traces/shortgpt_bi/calib/cybersecurity_01_phishing_triage-pt.jsonl (6344 records, 0 dropped, 0 sampled, 2.31s)
+5.37.846.295 I run_one_prompt: [cybersecurity_02_log_triage] prompt tokens = 38
+run_one_prompt: [cybersecurity_02_log_triage] trace written to traces/shortgpt_bi/calib/cybersecurity_02_log_triage-en.jsonl (5740 records, 0 dropped, 0 sampled, 2.37s)
+5.40.225.383 I run_one_prompt: [cybersecurity_02_log_triage] prompt tokens = 55
+run_one_prompt: [cybersecurity_02_log_triage] trace written to traces/shortgpt_bi/calib/cybersecurity_02_log_triage-it.jsonl (8307 records, 0 dropped, 0 sampled, 2.52s)
+5.42.754.856 I run_one_prompt: [cybersecurity_02_log_triage] prompt tokens = 43
+run_one_prompt: [cybersecurity_02_log_triage] trace written to traces/shortgpt_bi/calib/cybersecurity_02_log_triage-zh.jsonl (6495 records, 0 dropped, 0 sampled, 2.39s)
+5.45.153.457 I run_one_prompt: [cybersecurity_02_log_triage] prompt tokens = 52
+run_one_prompt: [cybersecurity_02_log_triage] trace written to traces/shortgpt_bi/calib/cybersecurity_02_log_triage-es.jsonl (7854 records, 0 dropped, 0 sampled, 2.43s)
+5.47.592.022 I run_one_prompt: [cybersecurity_02_log_triage] prompt tokens = 57
+run_one_prompt: [cybersecurity_02_log_triage] trace written to traces/shortgpt_bi/calib/cybersecurity_02_log_triage-fr.jsonl (8609 records, 0 dropped, 0 sampled, 2.55s)
+5.50.151.397 I run_one_prompt: [cybersecurity_02_log_triage] prompt tokens = 64
+run_one_prompt: [cybersecurity_02_log_triage] trace written to traces/shortgpt_bi/calib/cybersecurity_02_log_triage-de.jsonl (9666 records, 0 dropped, 0 sampled, 2.64s)
+5.52.803.825 I run_one_prompt: [cybersecurity_02_log_triage] prompt tokens = 57
+run_one_prompt: [cybersecurity_02_log_triage] trace written to traces/shortgpt_bi/calib/cybersecurity_02_log_triage-pt.jsonl (8609 records, 0 dropped, 0 sampled, 2.57s)
+5.55.386.781 I run_one_prompt: [cybersecurity_03_threat_modeling] prompt tokens = 30
+run_one_prompt: [cybersecurity_03_threat_modeling] trace written to traces/shortgpt_bi/calib/cybersecurity_03_threat_modeling-en.jsonl (4532 records, 0 dropped, 0 sampled, 1.89s)
+5.57.279.310 I run_one_prompt: [cybersecurity_03_threat_modeling] prompt tokens = 47
+run_one_prompt: [cybersecurity_03_threat_modeling] trace written to traces/shortgpt_bi/calib/cybersecurity_03_threat_modeling-it.jsonl (7099 records, 0 dropped, 0 sampled, 2.46s)
+5.59.746.607 I run_one_prompt: [cybersecurity_03_threat_modeling] prompt tokens = 37
+run_one_prompt: [cybersecurity_03_threat_modeling] trace written to traces/shortgpt_bi/calib/cybersecurity_03_threat_modeling-zh.jsonl (5589 records, 0 dropped, 0 sampled, 2.43s)
+6.02.183.570 I run_one_prompt: [cybersecurity_03_threat_modeling] prompt tokens = 46
+run_one_prompt: [cybersecurity_03_threat_modeling] trace written to traces/shortgpt_bi/calib/cybersecurity_03_threat_modeling-es.jsonl (6948 records, 0 dropped, 0 sampled, 2.46s)
+6.04.653.904 I run_one_prompt: [cybersecurity_03_threat_modeling] prompt tokens = 50
+run_one_prompt: [cybersecurity_03_threat_modeling] trace written to traces/shortgpt_bi/calib/cybersecurity_03_threat_modeling-fr.jsonl (7552 records, 0 dropped, 0 sampled, 2.46s)
+6.07.124.334 I run_one_prompt: [cybersecurity_03_threat_modeling] prompt tokens = 49
+run_one_prompt: [cybersecurity_03_threat_modeling] trace written to traces/shortgpt_bi/calib/cybersecurity_03_threat_modeling-de.jsonl (7401 records, 0 dropped, 0 sampled, 2.48s)
+6.09.609.300 I run_one_prompt: [cybersecurity_03_threat_modeling] prompt tokens = 50
+run_one_prompt: [cybersecurity_03_threat_modeling] trace written to traces/shortgpt_bi/calib/cybersecurity_03_threat_modeling-pt.jsonl (7552 records, 0 dropped, 0 sampled, 2.47s)
+main: batched 161 prompts -> traces/shortgpt_bi/calib (909191 total records, 0 dropped, 0 sampled, 372.04s total)
+>>> done. traces in: traces/shortgpt_bi/calib  (run log: traces/shortgpt_bi/calib/run.log)
+>>> SKIP_ANALYZE=1: skipping analyzer

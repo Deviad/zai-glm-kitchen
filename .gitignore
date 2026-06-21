@@ -1,0 +1,37 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.venv
+env/
+venv/
+ENV/
+dist/
+build/
+*.egg-info/
+*.egg
+models/
+*.gguf
+*.safetensors
+*.mlx/
+output/
+.DS_Store
+.uv/
+uv.lock
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# GLM-5.2 trace datasets that are too large to be git-tracked.
+# The 161-prompt multilingual activation suite is ~640 MB; rerun via
+# scripts/run_trace_suite_batched.sh if you need it locally.
+common/traces/batch/
+common/traces/smoke/
+common/traces/synth/
+
+# tracer run logs (llama-cli verbose output captured to *.run.log)
+*.run.log
+
+# built artifacts in vendored submodules (after sub-step: add submodules)
+vendor/

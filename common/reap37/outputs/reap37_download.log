@@ -1,0 +1,13 @@
+==> repo: pipenetwork/GLM-5.2-REAP37-MLX-4bit
+==> dest: /Volumes/Data NVME/GLM-5.2-REAP37-MLX-4bit
+==> this is ~265 GB; download resumes if interrupted
+Installed 22 packages in 36ms
+/Users/spotted/.cache/uv/archive-v0/P2Q-cIyKgDoGHLdQ/lib/python3.13/site-packages/huggingface_hub/utils/_validators.py:189: UserWarning: The `resume_download` argument is deprecated and ignored in `snapshot_download`. Downloads always resume whenever possible.
+  warnings.warn(
+Fetching 65 files:   0%|          | 0/65 [00:00<?, ?it/s]Fetching 65 files:   2%|▏         | 1/65 [00:00<00:39,  1.61it/s]Fetching 65 files:   5%|▍         | 3/65 [00:00<00:12,  4.92it/s]Fetching 65 files:   5%|▍         | 3/65 [00:20<00:12,  4.92it/s]Fetching 65 files:   9%|▉         | 6/65 [07:38<1:32:13, 93.79s/it]Fetching 65 files:  12%|█▏        | 8/65 [07:54<58:54, 62.01s/it]  Fetching 65 files:  22%|██▏       | 14/65 [09:15<27:28, 32.32s/it]Fetching 65 files:  23%|██▎       | 15/65 [13:06<48:01, 57.63s/it]Fetching 65 files:  25%|██▍       | 16/65 [15:48<1:00:07, 73.62s/it]Fetching 65 files:  29%|██▉       | 19/65 [16:40<39:16, 51.24s/it]  Fetching 65 files:  34%|███▍      | 22/65 [16:42<23:38, 32.99s/it]Fetching 65 files:  35%|███▌      | 23/65 [18:12<28:59, 41.41s/it]Fetching 65 files:  37%|███▋      | 24/65 [21:32<47:00, 68.80s/it]\n--- restarting download at Sat Jun 20 04:24:24 CEST 2026 ---
+==> repo: pipenetwork/GLM-5.2-REAP37-MLX-4bit
+==> dest: /Volumes/Data NVME/GLM-5.2-REAP37-MLX-4bit
+==> this is ~265 GB; download resumes if interrupted
+/Users/spotted/.cache/uv/archive-v0/P2Q-cIyKgDoGHLdQ/lib/python3.13/site-packages/huggingface_hub/utils/_validators.py:189: UserWarning: The `resume_download` argument is deprecated and ignored in `snapshot_download`. Downloads always resume whenever possible.
+  warnings.warn(
+Fetching 65 files:   0%|          | 0/65 [00:00<?, ?it/s]

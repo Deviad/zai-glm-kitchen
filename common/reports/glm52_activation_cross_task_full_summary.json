@@ -1,0 +1,778 @@
+{
+  "topn": 10,
+  "per_layer": [
+    {
+      "layer": 0,
+      "tensor_stem": "l_out",
+      "n_tasks": 7,
+      "pairwise_jaccard": {
+        "chemistry|coding": 1.0,
+        "chemistry|computer_science": 0.8181818181818182,
+        "chemistry|cybersecurity": 0.8181818181818182,
+        "chemistry|engineering": 1.0,
+        "chemistry|math": 0.8181818181818182,
+        "chemistry|physics": 1.0,
+        "coding|computer_science": 0.8181818181818182,
+        "coding|cybersecurity": 0.8181818181818182,
+        "coding|engineering": 1.0,
+        "coding|math": 0.8181818181818182,
+        "coding|physics": 1.0,
+        "computer_science|cybersecurity": 0.8181818181818182,
+        "computer_science|engineering": 0.8181818181818182,
+        "computer_science|math": 0.6666666666666666,
+        "computer_science|physics": 0.8181818181818182,
+        "cybersecurity|engineering": 0.8181818181818182,
+        "cybersecurity|math": 0.8181818181818182,
+        "cybersecurity|physics": 0.8181818181818182,
+        "engineering|math": 0.8181818181818182,
+        "engineering|physics": 1.0,
+        "math|physics": 0.8181818181818182
+      },
+      "mean_jaccard": 0.8629148629148629,
+      "shared_core": [
+        506,
+        822,
+        915,
+        2232,
+        2305,
+        3368,
+        4386,
+        4752,
+        4801,
+        5434
+      ],
+      "task_specific": {
+        "chemistry": [],
+        "coding": [],
+        "computer_science": [
+          5652
+        ],
+        "cybersecurity": [],
+        "engineering": [],
+        "math": [],
+        "physics": []
+      }
+    },
+    {
+      "layer": 6,
+      "tensor_stem": "l_out",
+      "n_tasks": 7,
+      "pairwise_jaccard": {
+        "chemistry|coding": 1.0,
+        "chemistry|computer_science": 0.8181818181818182,
+        "chemistry|cybersecurity": 1.0,
+        "chemistry|engineering": 1.0,
+        "chemistry|math": 1.0,
+        "chemistry|physics": 0.8181818181818182,
+        "coding|computer_science": 0.8181818181818182,
+        "coding|cybersecurity": 1.0,
+        "coding|engineering": 1.0,
+        "coding|math": 1.0,
+        "coding|physics": 0.8181818181818182,
+        "computer_science|cybersecurity": 0.8181818181818182,
+        "computer_science|engineering": 0.8181818181818182,
+        "computer_science|math": 0.8181818181818182,
+        "computer_science|physics": 0.8181818181818182,
+        "cybersecurity|engineering": 1.0,
+        "cybersecurity|math": 1.0,
+        "cybersecurity|physics": 0.8181818181818182,
+        "engineering|math": 1.0,
+        "engineering|physics": 0.8181818181818182,
+        "math|physics": 0.8181818181818182
+      },
+      "mean_jaccard": 0.9047619047619048,
+      "shared_core": [
+        506,
+        2232,
+        2305,
+        2674,
+        3203,
+        3257,
+        4386,
+        4801,
+        5434,
+        5943
+      ],
+      "task_specific": {
+        "chemistry": [],
+        "coding": [],
+        "computer_science": [
+          4241
+        ],
+        "cybersecurity": [],
+        "engineering": [],
+        "math": [],
+        "physics": [
+          5655
+        ]
+      }
+    },
+    {
+      "layer": 12,
+      "tensor_stem": "l_out",
+      "n_tasks": 7,
+      "pairwise_jaccard": {
+        "chemistry|coding": 1.0,
+        "chemistry|computer_science": 1.0,
+        "chemistry|cybersecurity": 1.0,
+        "chemistry|engineering": 1.0,
+        "chemistry|math": 1.0,
+        "chemistry|physics": 0.8181818181818182,
+        "coding|computer_science": 1.0,
+        "coding|cybersecurity": 1.0,
+        "coding|engineering": 1.0,
+        "coding|math": 1.0,
+        "coding|physics": 0.8181818181818182,
+        "computer_science|cybersecurity": 1.0,
+        "computer_science|engineering": 1.0,
+        "computer_science|math": 1.0,
+        "computer_science|physics": 0.8181818181818182,
+        "cybersecurity|engineering": 1.0,
+        "cybersecurity|math": 1.0,
+        "cybersecurity|physics": 0.8181818181818182,
+        "engineering|math": 1.0,
+        "engineering|physics": 0.8181818181818182,
+        "math|physics": 0.8181818181818182
+      },
+      "mean_jaccard": 0.9480519480519481,
+      "shared_core": [
+        506,
+        2232,
+        2305,
+        2674,
+        3203,
+        3257,
+        4386,
+        4801,
+        5655,
+        5943
+      ],
+      "task_specific": {
+        "chemistry": [],
+        "coding": [],
+        "computer_science": [],
+        "cybersecurity": [],
+        "engineering": [],
+        "math": [],
+        "physics": [
+          5198
+        ]
+      }
+    },
+    {
+      "layer": 18,
+      "tensor_stem": "l_out",
+      "n_tasks": 7,
+      "pairwise_jaccard": {
+        "chemistry|coding": 0.8181818181818182,
+        "chemistry|computer_science": 0.8181818181818182,
+        "chemistry|cybersecurity": 0.8181818181818182,
+        "chemistry|engineering": 0.8181818181818182,
+        "chemistry|math": 0.8181818181818182,
+        "chemistry|physics": 1.0,
+        "coding|computer_science": 0.8181818181818182,
+        "coding|cybersecurity": 1.0,
+        "coding|engineering": 0.8181818181818182,
+        "coding|math": 0.8181818181818182,
+        "coding|physics": 0.8181818181818182,
+        "computer_science|cybersecurity": 0.8181818181818182,
+        "computer_science|engineering": 1.0,
+        "computer_science|math": 1.0,
+        "computer_science|physics": 0.8181818181818182,
+        "cybersecurity|engineering": 0.8181818181818182,
+        "cybersecurity|math": 0.8181818181818182,
+        "cybersecurity|physics": 0.8181818181818182,
+        "engineering|math": 1.0,
+        "engineering|physics": 0.8181818181818182,
+        "math|physics": 0.8181818181818182
+      },
+      "mean_jaccard": 0.8614718614718616,
+      "shared_core": [
+        506,
+        2232,
+        2305,
+        2674,
+        3203,
+        3257,
+        4386,
+        4801,
+        5198,
+        5655,
+        5943
+      ],
+      "task_specific": {
+        "chemistry": [],
+        "coding": [],
+        "computer_science": [],
+        "cybersecurity": [],
+        "engineering": [],
+        "math": [],
+        "physics": []
+      }
+    },
+    {
+      "layer": 24,
+      "tensor_stem": "l_out",
+      "n_tasks": 7,
+      "pairwise_jaccard": {
+        "chemistry|coding": 1.0,
+        "chemistry|computer_science": 1.0,
+        "chemistry|cybersecurity": 1.0,
+        "chemistry|engineering": 1.0,
+        "chemistry|math": 1.0,
+        "chemistry|physics": 1.0,
+        "coding|computer_science": 1.0,
+        "coding|cybersecurity": 1.0,
+        "coding|engineering": 1.0,
+        "coding|math": 1.0,
+        "coding|physics": 1.0,
+        "computer_science|cybersecurity": 1.0,
+        "computer_science|engineering": 1.0,
+        "computer_science|math": 1.0,
+        "computer_science|physics": 1.0,
+        "cybersecurity|engineering": 1.0,
+        "cybersecurity|math": 1.0,
+        "cybersecurity|physics": 1.0,
+        "engineering|math": 1.0,
+        "engineering|physics": 1.0,
+        "math|physics": 1.0
+      },
+      "mean_jaccard": 1.0,
+      "shared_core": [
+        506,
+        2232,
+        2305,
+        2588,
+        3203,
+        3257,
+        4386,
+        4801,
+        5655,
+        5943
+      ],
+      "task_specific": {
+        "chemistry": [],
+        "coding": [],
+        "computer_science": [],
+        "cybersecurity": [],
+        "engineering": [],
+        "math": [],
+        "physics": []
+      }
+    },
+    {
+      "layer": 30,
+      "tensor_stem": "l_out",
+      "n_tasks": 7,
+      "pairwise_jaccard": {
+        "chemistry|coding": 1.0,
+        "chemistry|computer_science": 1.0,
+        "chemistry|cybersecurity": 1.0,
+        "chemistry|engineering": 1.0,
+        "chemistry|math": 1.0,
+        "chemistry|physics": 1.0,
+        "coding|computer_science": 1.0,
+        "coding|cybersecurity": 1.0,
+        "coding|engineering": 1.0,
+        "coding|math": 1.0,
+        "coding|physics": 1.0,
+        "computer_science|cybersecurity": 1.0,
+        "computer_science|engineering": 1.0,
+        "computer_science|math": 1.0,
+        "computer_science|physics": 1.0,
+        "cybersecurity|engineering": 1.0,
+        "cybersecurity|math": 1.0,
+        "cybersecurity|physics": 1.0,
+        "engineering|math": 1.0,
+        "engineering|physics": 1.0,
+        "math|physics": 1.0
+      },
+      "mean_jaccard": 1.0,
+      "shared_core": [
+        506,
+        2232,
+        2305,
+        2588,
+        2674,
+        3203,
+        3257,
+        4386,
+        4801,
+        5943
+      ],
+      "task_specific": {
+        "chemistry": [],
+        "coding": [],
+        "computer_science": [],
+        "cybersecurity": [],
+        "engineering": [],
+        "math": [],
+        "physics": []
+      }
+    },
+    {
+      "layer": 36,
+      "tensor_stem": "l_out",
+      "n_tasks": 7,
+      "pairwise_jaccard": {
+        "chemistry|coding": 0.8181818181818182,
+        "chemistry|computer_science": 0.8181818181818182,
+        "chemistry|cybersecurity": 0.8181818181818182,
+        "chemistry|engineering": 0.8181818181818182,
+        "chemistry|math": 0.8181818181818182,
+        "chemistry|physics": 1.0,
+        "coding|computer_science": 1.0,
+        "coding|cybersecurity": 0.8181818181818182,
+        "coding|engineering": 0.8181818181818182,
+        "coding|math": 0.8181818181818182,
+        "coding|physics": 0.8181818181818182,
+        "computer_science|cybersecurity": 0.8181818181818182,
+        "computer_science|engineering": 0.8181818181818182,
+        "computer_science|math": 0.8181818181818182,
+        "computer_science|physics": 0.8181818181818182,
+        "cybersecurity|engineering": 0.8181818181818182,
+        "cybersecurity|math": 0.8181818181818182,
+        "cybersecurity|physics": 0.8181818181818182,
+        "engineering|math": 0.8181818181818182,
+        "engineering|physics": 0.8181818181818182,
+        "math|physics": 0.8181818181818182
+      },
+      "mean_jaccard": 0.8354978354978355,
+      "shared_core": [
+        506,
+        2232,
+        2305,
+        2588,
+        2674,
+        3203,
+        4386,
+        4801,
+        5943
+      ],
+      "task_specific": {
+        "chemistry": [],
+        "coding": [],
+        "computer_science": [],
+        "cybersecurity": [
+          2800
+        ],
+        "engineering": [
+          4061
+        ],
+        "math": [
+          394
+        ],
+        "physics": []
+      }
+    },
+    {
+      "layer": 42,
+      "tensor_stem": "l_out",
+      "n_tasks": 7,
+      "pairwise_jaccard": {
+        "chemistry|coding": 0.8181818181818182,
+        "chemistry|computer_science": 0.6666666666666666,
+        "chemistry|cybersecurity": 0.6666666666666666,
+        "chemistry|engineering": 0.6666666666666666,
+        "chemistry|math": 0.8181818181818182,
+        "chemistry|physics": 0.8181818181818182,
+        "coding|computer_science": 0.8181818181818182,
+        "coding|cybersecurity": 0.6666666666666666,
+        "coding|engineering": 0.8181818181818182,
+        "coding|math": 1.0,
+        "coding|physics": 1.0,
+        "computer_science|cybersecurity": 0.5384615384615384,
+        "computer_science|engineering": 0.6666666666666666,
+        "computer_science|math": 0.8181818181818182,
+        "computer_science|physics": 0.8181818181818182,
+        "cybersecurity|engineering": 0.5384615384615384,
+        "cybersecurity|math": 0.6666666666666666,
+        "cybersecurity|physics": 0.6666666666666666,
+        "engineering|math": 0.8181818181818182,
+        "engineering|physics": 0.8181818181818182,
+        "math|physics": 1.0
+      },
+      "mean_jaccard": 0.7670107670107671,
+      "shared_core": [
+        96,
+        186,
+        506,
+        2232,
+        2588,
+        3015,
+        3203,
+        4386,
+        4801,
+        5809
+      ],
+      "task_specific": {
+        "chemistry": [
+          2263
+        ],
+        "coding": [],
+        "computer_science": [
+          4749
+        ],
+        "cybersecurity": [
+          279,
+          2970
+        ],
+        "engineering": [
+          2964
+        ],
+        "math": [],
+        "physics": []
+      }
+    },
+    {
+      "layer": 48,
+      "tensor_stem": "l_out",
+      "n_tasks": 7,
+      "pairwise_jaccard": {
+        "chemistry|coding": 0.42857142857142855,
+        "chemistry|computer_science": 0.42857142857142855,
+        "chemistry|cybersecurity": 0.3333333333333333,
+        "chemistry|engineering": 0.3333333333333333,
+        "chemistry|math": 0.42857142857142855,
+        "chemistry|physics": 0.42857142857142855,
+        "coding|computer_science": 0.42857142857142855,
+        "coding|cybersecurity": 0.25,
+        "coding|engineering": 0.3333333333333333,
+        "coding|math": 0.3333333333333333,
+        "coding|physics": 0.42857142857142855,
+        "computer_science|cybersecurity": 0.42857142857142855,
+        "computer_science|engineering": 0.42857142857142855,
+        "computer_science|math": 0.3333333333333333,
+        "computer_science|physics": 0.42857142857142855,
+        "cybersecurity|engineering": 0.3333333333333333,
+        "cybersecurity|math": 0.3333333333333333,
+        "cybersecurity|physics": 0.42857142857142855,
+        "engineering|math": 0.3333333333333333,
+        "engineering|physics": 0.3333333333333333,
+        "math|physics": 0.42857142857142855
+      },
+      "mean_jaccard": 0.3792517006802721,
+      "shared_core": [
+        420,
+        2232,
+        3015,
+        3203,
+        4386,
+        4801
+      ],
+      "task_specific": {
+        "chemistry": [
+          1819,
+          3099,
+          5207
+        ],
+        "coding": [
+          2906,
+          4137,
+          5479
+        ],
+        "computer_science": [
+          1086,
+          2355
+        ],
+        "cybersecurity": [
+          385,
+          775,
+          2971
+        ],
+        "engineering": [
+          1806,
+          2033,
+          2589,
+          5172
+        ],
+        "math": [
+          474,
+          2480,
+          4823,
+          5722
+        ],
+        "physics": [
+          714,
+          3613
+        ]
+      }
+    },
+    {
+      "layer": 54,
+      "tensor_stem": "l_out",
+      "n_tasks": 7,
+      "pairwise_jaccard": {
+        "chemistry|coding": 0.42857142857142855,
+        "chemistry|computer_science": 0.42857142857142855,
+        "chemistry|cybersecurity": 0.3333333333333333,
+        "chemistry|engineering": 0.42857142857142855,
+        "chemistry|math": 0.42857142857142855,
+        "chemistry|physics": 0.3333333333333333,
+        "coding|computer_science": 0.42857142857142855,
+        "coding|cybersecurity": 0.3333333333333333,
+        "coding|engineering": 0.42857142857142855,
+        "coding|math": 0.42857142857142855,
+        "coding|physics": 0.3333333333333333,
+        "computer_science|cybersecurity": 0.3333333333333333,
+        "computer_science|engineering": 0.42857142857142855,
+        "computer_science|math": 0.6666666666666666,
+        "computer_science|physics": 0.5384615384615384,
+        "cybersecurity|engineering": 0.25,
+        "cybersecurity|math": 0.3333333333333333,
+        "cybersecurity|physics": 0.25,
+        "engineering|math": 0.3333333333333333,
+        "engineering|physics": 0.3333333333333333,
+        "math|physics": 0.5384615384615384
+      },
+      "mean_jaccard": 0.39708703994418276,
+      "shared_core": [
+        1806,
+        2232,
+        2800,
+        3015,
+        3203,
+        4386
+      ],
+      "task_specific": {
+        "chemistry": [
+          2496,
+          5239,
+          5627
+        ],
+        "coding": [
+          1467,
+          2144,
+          2263
+        ],
+        "computer_science": [
+          2355
+        ],
+        "cybersecurity": [
+          385,
+          2712,
+          2971,
+          5013,
+          5976
+        ],
+        "engineering": [
+          2508,
+          2735
+        ],
+        "math": [
+          420,
+          6086
+        ],
+        "physics": [
+          714,
+          1738,
+          5221
+        ]
+      }
+    },
+    {
+      "layer": 60,
+      "tensor_stem": "l_out",
+      "n_tasks": 7,
+      "pairwise_jaccard": {
+        "chemistry|coding": 0.25,
+        "chemistry|computer_science": 0.5384615384615384,
+        "chemistry|cybersecurity": 0.25,
+        "chemistry|engineering": 0.42857142857142855,
+        "chemistry|math": 0.42857142857142855,
+        "chemistry|physics": 0.5384615384615384,
+        "coding|computer_science": 0.42857142857142855,
+        "coding|cybersecurity": 0.25,
+        "coding|engineering": 0.3333333333333333,
+        "coding|math": 0.42857142857142855,
+        "coding|physics": 0.25,
+        "computer_science|cybersecurity": 0.25,
+        "computer_science|engineering": 0.5384615384615384,
+        "computer_science|math": 0.6666666666666666,
+        "computer_science|physics": 0.6666666666666666,
+        "cybersecurity|engineering": 0.25,
+        "cybersecurity|math": 0.3333333333333333,
+        "cybersecurity|physics": 0.3333333333333333,
+        "engineering|math": 0.3333333333333333,
+        "engineering|physics": 0.42857142857142855,
+        "math|physics": 0.5384615384615384
+      },
+      "mean_jaccard": 0.4030176173033316,
+      "shared_core": [
+        714,
+        1806,
+        2232,
+        3015,
+        3203,
+        4386,
+        5722
+      ],
+      "task_specific": {
+        "chemistry": [
+          92,
+          3738,
+          5963
+        ],
+        "coding": [
+          1275,
+          1467,
+          1509
+        ],
+        "computer_science": [],
+        "cybersecurity": [
+          2712,
+          2945,
+          3546,
+          5976
+        ],
+        "engineering": [
+          1002,
+          2735,
+          4587
+        ],
+        "math": [
+          4494
+        ],
+        "physics": [
+          5221
+        ]
+      }
+    },
+    {
+      "layer": 66,
+      "tensor_stem": "l_out",
+      "n_tasks": 7,
+      "pairwise_jaccard": {
+        "chemistry|coding": 0.3333333333333333,
+        "chemistry|computer_science": 0.42857142857142855,
+        "chemistry|cybersecurity": 0.3333333333333333,
+        "chemistry|engineering": 0.42857142857142855,
+        "chemistry|math": 0.3333333333333333,
+        "chemistry|physics": 0.5384615384615384,
+        "coding|computer_science": 0.5384615384615384,
+        "coding|cybersecurity": 0.42857142857142855,
+        "coding|engineering": 0.42857142857142855,
+        "coding|math": 0.5384615384615384,
+        "coding|physics": 0.42857142857142855,
+        "computer_science|cybersecurity": 0.42857142857142855,
+        "computer_science|engineering": 0.5384615384615384,
+        "computer_science|math": 0.5384615384615384,
+        "computer_science|physics": 0.5384615384615384,
+        "cybersecurity|engineering": 0.42857142857142855,
+        "cybersecurity|math": 0.42857142857142855,
+        "cybersecurity|physics": 0.3333333333333333,
+        "engineering|math": 0.42857142857142855,
+        "engineering|physics": 0.42857142857142855,
+        "math|physics": 0.42857142857142855
+      },
+      "mean_jaccard": 0.44182801325658466,
+      "shared_core": [
+        714,
+        1806,
+        2842,
+        2906,
+        3015,
+        3203,
+        4386,
+        5722
+      ],
+      "task_specific": {
+        "chemistry": [
+          3721,
+          3738,
+          5270
+        ],
+        "coding": [
+          1057,
+          2649,
+          5636
+        ],
+        "computer_science": [
+          1561,
+          2436
+        ],
+        "cybersecurity": [
+          501,
+          2945,
+          4596,
+          5976
+        ],
+        "engineering": [
+          1002,
+          2508,
+          3835
+        ],
+        "math": [
+          28,
+          3863,
+          5809
+        ],
+        "physics": [
+          181,
+          5221
+        ]
+      }
+    },
+    {
+      "layer": 72,
+      "tensor_stem": "l_out",
+      "n_tasks": 7,
+      "pairwise_jaccard": {
+        "chemistry|coding": 0.6666666666666666,
+        "chemistry|computer_science": 0.6666666666666666,
+        "chemistry|cybersecurity": 0.42857142857142855,
+        "chemistry|engineering": 0.8181818181818182,
+        "chemistry|math": 0.8181818181818182,
+        "chemistry|physics": 1.0,
+        "coding|computer_science": 0.8181818181818182,
+        "coding|cybersecurity": 0.5384615384615384,
+        "coding|engineering": 0.8181818181818182,
+        "coding|math": 0.6666666666666666,
+        "coding|physics": 0.6666666666666666,
+        "computer_science|cybersecurity": 0.5384615384615384,
+        "computer_science|engineering": 0.8181818181818182,
+        "computer_science|math": 0.6666666666666666,
+        "computer_science|physics": 0.6666666666666666,
+        "cybersecurity|engineering": 0.5384615384615384,
+        "cybersecurity|math": 0.42857142857142855,
+        "cybersecurity|physics": 0.42857142857142855,
+        "engineering|math": 0.8181818181818182,
+        "engineering|physics": 0.8181818181818182,
+        "math|physics": 0.8181818181818182
+      },
+      "mean_jaccard": 0.687931116502545,
+      "shared_core": [
+        116,
+        714,
+        1422,
+        1806,
+        2342,
+        2842,
+        2906,
+        3015,
+        4386,
+        5722
+      ],
+      "task_specific": {
+        "chemistry": [],
+        "coding": [
+          2649
+        ],
+        "computer_science": [
+          2504
+        ],
+        "cybersecurity": [
+          501,
+          3641,
+          5976
+        ],
+        "engineering": [],
+        "math": [
+          390
+        ],
+        "physics": []
+      }
+    }
+  ],
+  "n_layers": 13
+}

@@ -1,0 +1,96 @@
+{
+  "caveats": [
+    "REAP37 MLX indexer-compat traces are marked INVALID for quality comparison: stock mlx-lm lacks IndexShare support; see REAP37_EXPERIMENTS.md."
+  ],
+  "expert_total_changes": {},
+  "global_top_experts_by_label": {
+    "baseline": [
+      [
+        44,
+        178
+      ],
+      [
+        45,
+        173
+      ],
+      [
+        43,
+        172
+      ],
+      [
+        42,
+        126
+      ],
+      [
+        55,
+        125
+      ],
+      [
+        165,
+        125
+      ],
+      [
+        164,
+        122
+      ],
+      [
+        10,
+        119
+      ]
+    ],
+    "reap37-compat": [
+      [
+        44,
+        178
+      ],
+      [
+        45,
+        173
+      ],
+      [
+        43,
+        172
+      ],
+      [
+        42,
+        126
+      ],
+      [
+        55,
+        125
+      ],
+      [
+        165,
+        125
+      ],
+      [
+        164,
+        122
+      ],
+      [
+        10,
+        119
+      ]
+    ]
+  },
+  "labels": [
+    "baseline",
+    "reap37-compat"
+  ],
+  "missing_experts_by_label": {
+    "baseline": [],
+    "reap37-compat": []
+  },
+  "schema_version": 1,
+  "speed_by_label": {
+    "baseline": {
+      "mean_gen_per_sec": null,
+      "n_runs": 161
+    },
+    "reap37-compat": {
+      "mean_gen_per_sec": null,
+      "n_runs": 161
+    }
+  },
+  "topn": 8
+}

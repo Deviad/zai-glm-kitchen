@@ -1,0 +1,95 @@
+{
+  "report": "glm52_token0_marker_family",
+  "generated_at": "2026-06-20",
+  "trace_dataset": "traces/batch/activation_full_161/*.jsonl",
+  "n_trace_files": 161,
+  "method": "post-hoc Python analysis on existing Phase 5b traces (no new C++ runs)",
+  "marker_channels": [
+    {
+      "channel": 4386,
+      "role": "deep_marker_negative",
+      "peak_abs_magnitude": 229.43,
+      "peak_magnitude": -229.43,
+      "peak_layer": 42,
+      "polarity": "negative",
+      "tok0_in_top10_count": 10,
+      "tok0_in_top10_percent": 100.0,
+      "saturation_layer_range": [36, 66],
+      "saturation_value_range": [-229.43, -203.30],
+      "notes": "Most robust marker — saturates at ~-226 across L36-L66 on token 0"
+    },
+    {
+      "channel": 2232,
+      "role": "mid_marker_positive",
+      "peak_abs_magnitude": 83.65,
+      "peak_magnitude": 83.65,
+      "peak_layer": 42,
+      "polarity": "positive",
+      "tok0_in_top10_count": 10,
+      "tok0_in_top10_percent": 100.0,
+      "notes": "Opposite polarity to #4386 at same layer (L42)"
+    },
+    {
+      "channel": 506,
+      "role": "shallow_marker_positive",
+      "peak_abs_magnitude": 36.86,
+      "peak_magnitude": 36.86,
+      "peak_layer": 24,
+      "polarity": "positive",
+      "tok0_in_top10_count": 10,
+      "tok0_in_top10_percent": 100.0,
+      "notes": "Similar magnitude to #2305 at adjacent layer"
+    },
+    {
+      "channel": 2305,
+      "role": "shallow_marker_positive",
+      "peak_abs_magnitude": 38.72,
+      "peak_magnitude": 38.72,
+      "peak_layer": 18,
+      "polarity": "positive",
+      "tok0_in_top10_count": 10,
+      "tok0_in_top10_percent": 100.0,
+      "notes": "Shallowest marker, only 6 layers below #506"
+    }
+  ],
+  "background_riders": [
+    {
+      "channel": 3203,
+      "role": "background_rider",
+      "peak_abs_magnitude": 7.02,
+      "peak_layer": 60,
+      "tok0_in_top10_count": 0,
+      "notes": "Appears in top-K alongside #4386 but does not saturate itself"
+    },
+    {
+      "channel": 4801,
+      "role": "background_rider",
+      "peak_abs_magnitude": 10.37,
+      "peak_layer": 30,
+      "tok0_in_top10_count": 0,
+      "notes": "Peak at L30 (between #2305 and #2232 ranges) but no positional pattern"
+    },
+    {
+      "channel": 5943,
+      "role": "background_rider",
+      "peak_abs_magnitude": 6.48,
+      "peak_layer": 72,
+      "tok0_in_top10_count": 0,
+      "notes": "Small negative peaks scattered across token positions"
+    }
+  ],
+  "key_findings": [
+    "4 of 7 channels tested (markers #4386, #2232, #506, #2305) saturate 100% on token_index=0",
+    "#4386 is the largest-magnitude marker (~229 vs next largest #2232 ~84)",
+    "#4386 and #2232 saturate at the SAME layer (L42) with OPPOSITE polarity",
+    "#506 and #2305 are 6 layers apart with nearly identical saturation magnitudes (~37)",
+    "Background rider channels peak at <50% of smallest marker magnitude",
+    "Token-0 marker role is distributed across depths — no single channel covers full stack"
+  ],
+  "channels_per_depth_phase": {
+    "shallow (L18-L24)": [2305, 506],
+    "mid (L42)": [4386, 2232],
+    "deep (L48-L66)": [4386],
+    "background riders (no specific peak depth)": [3203, 4801, 5943]
+  }
+}

@@ -1,0 +1,404 @@
+{
+  "meta": {
+    "schema_version": 1,
+    "name": "glm52_multilingual_trace_smoke_suite_v1",
+    "description": "20 base smoke tests for GLM-5.2 tracing, translated across seven languages.",
+    "languages": {
+      "en": "English",
+      "it": "Italian",
+      "zh": "Chinese (Simplified)",
+      "es": "Spanish",
+      "fr": "French",
+      "de": "German",
+      "pt": "Portuguese"
+    },
+    "domains": [
+      "coding",
+      "math",
+      "physics",
+      "engineering",
+      "computer_science",
+      "chemistry",
+      "cybersecurity"
+    ],
+    "answer_constraints": "Answer in the same language as the prompt unless the prompt asks for code. Keep answers concise for trace smoke runs.",
+    "base_test_count": 23,
+    "expanded_prompt_count": 161,
+    "thinking_policy": {
+      "default_mode": "disabled_or_minimal",
+      "reasoning_effort": "none_for_fast_trace_smoke",
+      "recommended_max_new_tokens": 256,
+      "rationale": "Fast smoke traces compare routing/activation by language and domain; long thinking would slow runs and confound trace volume. Run a separate reasoning-quality subset with thinking enabled."
+    }
+  },
+  "tests": [
+    {
+      "id": "coding_01_iterative_merge_sort",
+      "domain": "coding",
+      "task_type": "implementation",
+      "difficulty": "easy",
+      "answer_style": "code_first_short_explanation",
+      "prompts": {
+        "en": "Write a non-recursive merge sort in Python. Return code first, then one short explanation sentence.",
+        "it": "Scrivi un merge sort non ricorsivo in Python. Rispondi prima con il codice, poi con una breve frase di spiegazione.",
+        "zh": "用 Python 编写一个非递归的归并排序。先给出代码，然后用一句话简短说明。",
+        "es": "Escribe un merge sort no recursivo en Python. Devuelve primero el código y luego una breve frase de explicación.",
+        "fr": "Écris un tri fusion non récursif en Python. Donne d’abord le code, puis une courte phrase d’explication.",
+        "de": "Schreibe einen nicht-rekursiven Merge-Sort in Python. Gib zuerst den Code aus und danach einen kurzen Erklärungssatz.",
+        "pt": "Escreva um merge sort não recursivo em Python. Responda primeiro com o código e depois com uma frase curta de explicação."
+      }
+    },
+    {
+      "id": "coding_02_event_stream_repair",
+      "domain": "coding",
+      "task_type": "implementation",
+      "difficulty": "medium",
+      "answer_style": "code_and_tests",
+      "prompts": {
+        "en": "Implement a Python function repair_event_stream(events) that sorts events by timestamp, removes duplicate event ids, and preserves the first occurrence of each id. Include two small tests.",
+        "it": "Implementa una funzione Python repair_event_stream(events) che ordina gli eventi per timestamp, rimuove gli id evento duplicati e conserva la prima occorrenza di ogni id. Includi due piccoli test.",
+        "zh": "实现一个 Python 函数 repair_event_stream(events)，按时间戳排序事件，移除重复的事件 id，并保留每个 id 的第一次出现。包含两个小测试。",
+        "es": "Implementa una función de Python repair_event_stream(events) que ordene los eventos por timestamp, elimine ids de evento duplicados y conserve la primera aparición de cada id. Incluye dos pruebas pequeñas.",
+        "fr": "Implémente une fonction Python repair_event_stream(events) qui trie les événements par timestamp, supprime les identifiants d’événement en double et conserve la première occurrence de chaque identifiant. Inclus deux petits tests.",
+        "de": "Implementiere eine Python-Funktion repair_event_stream(events), die Ereignisse nach Zeitstempel sortiert, doppelte Ereignis-IDs entfernt und das erste Auftreten jeder ID beibehält. Füge zwei kleine Tests hinzu.",
+        "pt": "Implemente uma função Python repair_event_stream(events) que ordene eventos por timestamp, remova ids de evento duplicados e preserve a primeira ocorrência de cada id. Inclua dois testes pequenos."
+      }
+    },
+    {
+      "id": "coding_03_async_queue_bug",
+      "domain": "coding",
+      "task_type": "debugging",
+      "difficulty": "medium",
+      "answer_style": "diagnosis_and_patch",
+      "prompts": {
+        "en": "A background writer thread consumes trace records from a bounded queue. Sometimes inference blocks forever when the queue is full. Explain the likely bug and propose a safe non-blocking policy.",
+        "it": "Un thread writer in background consuma record di trace da una coda limitata. A volte l’inferenza si blocca per sempre quando la coda è piena. Spiega il bug probabile e proponi una policy sicura non bloccante.",
+        "zh": "一个后台写入线程从有界队列中消费 trace 记录。当队列已满时，推理有时会永久阻塞。解释可能的错误，并提出一种安全的非阻塞策略。",
+        "es": "Un hilo escritor en segundo plano consume registros de traza desde una cola acotada. A veces la inferencia se bloquea para siempre cuando la cola está llena. Explica el error probable y propone una política segura no bloqueante.",
+        "fr": "Un thread d’écriture en arrière-plan consomme des enregistrements de trace depuis une file bornée. Parfois l’inférence se bloque indéfiniment quand la file est pleine. Explique le bug probable et propose une politique sûre non bloquante.",
+        "de": "Ein Hintergrund-Writer-Thread konsumiert Trace-Datensätze aus einer begrenzten Queue. Manchmal blockiert die Inferenz dauerhaft, wenn die Queue voll ist. Erkläre den wahrscheinlichen Fehler und schlage eine sichere nicht-blockierende Policy vor.",
+        "pt": "Uma thread escritora em segundo plano consome registros de trace de uma fila limitada. Às vezes a inferência bloqueia para sempre quando a fila está cheia. Explique o bug provável e proponha uma política segura não bloqueante."
+      }
+    },
+    {
+      "id": "coding_04_lru_cache",
+      "domain": "coding",
+      "task_type": "implementation",
+      "difficulty": "medium",
+      "answer_style": "code_first_short_explanation",
+      "prompts": {
+        "en": "Implement an LRU cache in Python with get and put in O(1) time. Use only standard library data structures. Keep the answer concise.",
+        "it": "Implementa una cache LRU in Python con get e put in tempo O(1). Usa solo strutture dati della libreria standard. Mantieni la risposta concisa.",
+        "zh": "用 Python 实现一个 LRU 缓存，使 get 和 put 都是 O(1)。只使用标准库数据结构。回答要简洁。",
+        "es": "Implementa una caché LRU en Python con get y put en tiempo O(1). Usa solo estructuras de datos de la biblioteca estándar. Mantén la respuesta concisa.",
+        "fr": "Implémente un cache LRU en Python avec get et put en temps O(1). Utilise uniquement les structures de données de la bibliothèque standard. Reste concis.",
+        "de": "Implementiere einen LRU-Cache in Python mit get und put in O(1)-Zeit. Verwende nur Datenstrukturen aus der Standardbibliothek. Antworte knapp.",
+        "pt": "Implemente um cache LRU em Python com get e put em tempo O(1). Use apenas estruturas de dados da biblioteca padrão. Seja conciso."
+      }
+    },
+    {
+      "id": "math_01_linear_system",
+      "domain": "math",
+      "task_type": "calculation",
+      "difficulty": "easy",
+      "answer_style": "steps_and_result",
+      "prompts": {
+        "en": "Solve the system 2x + 3y = 13 and x - y = 1. Show the main steps and final values.",
+        "it": "Risolvi il sistema 2x + 3y = 13 e x - y = 1. Mostra i passaggi principali e i valori finali.",
+        "zh": "求解方程组 2x + 3y = 13 和 x - y = 1。展示主要步骤和最终结果。",
+        "es": "Resuelve el sistema 2x + 3y = 13 y x - y = 1. Muestra los pasos principales y los valores finales.",
+        "fr": "Résous le système 2x + 3y = 13 et x - y = 1. Montre les étapes principales et les valeurs finales.",
+        "de": "Löse das Gleichungssystem 2x + 3y = 13 und x - y = 1. Zeige die wichtigsten Schritte und die Endwerte.",
+        "pt": "Resolva o sistema 2x + 3y = 13 e x - y = 1. Mostre os passos principais e os valores finais."
+      }
+    },
+    {
+      "id": "math_02_bayes",
+      "domain": "math",
+      "task_type": "probability",
+      "difficulty": "medium",
+      "answer_style": "formula_and_numeric_answer",
+      "prompts": {
+        "en": "A disease affects 1% of people. A test has 95% sensitivity and 90% specificity. If a person tests positive, what is the probability they have the disease?",
+        "it": "Una malattia colpisce l’1% delle persone. Un test ha sensibilità del 95% e specificità del 90%. Se una persona risulta positiva, qual è la probabilità che abbia la malattia?",
+        "zh": "某疾病影响 1% 的人群。某测试的敏感性为 95%，特异性为 90%。如果一个人测试呈阳性，他患病的概率是多少？",
+        "es": "Una enfermedad afecta al 1% de las personas. Una prueba tiene 95% de sensibilidad y 90% de especificidad. Si una persona da positivo, ¿cuál es la probabilidad de que tenga la enfermedad?",
+        "fr": "Une maladie touche 1 % des personnes. Un test a une sensibilité de 95 % et une spécificité de 90 %. Si une personne est testée positive, quelle est la probabilité qu’elle ait la maladie ?",
+        "de": "Eine Krankheit betrifft 1 % der Menschen. Ein Test hat 95 % Sensitivität und 90 % Spezifität. Wenn eine Person positiv getestet wird, wie hoch ist die Wahrscheinlichkeit, dass sie die Krankheit hat?",
+        "pt": "Uma doença afeta 1% das pessoas. Um teste tem 95% de sensibilidade e 90% de especificidade. Se uma pessoa testa positivo, qual é a probabilidade de ela ter a doença?"
+      }
+    },
+    {
+      "id": "math_03_eigenvalues",
+      "domain": "math",
+      "task_type": "conceptual_calculation",
+      "difficulty": "medium",
+      "answer_style": "steps_and_interpretation",
+      "prompts": {
+        "en": "Find the eigenvalues of the matrix [[2, 1], [1, 2]] and briefly explain what an eigenvector means geometrically.",
+        "it": "Trova gli autovalori della matrice [[2, 1], [1, 2]] e spiega brevemente che cosa significa geometricamente un autovettore.",
+        "zh": "求矩阵 [[2, 1], [1, 2]] 的特征值，并简要解释特征向量的几何含义。",
+        "es": "Encuentra los valores propios de la matriz [[2, 1], [1, 2]] y explica brevemente qué significa geométricamente un vector propio.",
+        "fr": "Trouve les valeurs propres de la matrice [[2, 1], [1, 2]] et explique brièvement le sens géométrique d’un vecteur propre.",
+        "de": "Bestimme die Eigenwerte der Matrix [[2, 1], [1, 2]] und erkläre kurz, was ein Eigenvektor geometrisch bedeutet.",
+        "pt": "Encontre os autovalores da matriz [[2, 1], [1, 2]] e explique brevemente o significado geométrico de um autovetor."
+      }
+    },
+    {
+      "id": "physics_01_projectile",
+      "domain": "physics",
+      "task_type": "calculation",
+      "difficulty": "easy",
+      "answer_style": "formula_and_numeric_answer",
+      "prompts": {
+        "en": "A projectile is launched at 20 m/s at 30 degrees above horizontal, ignoring air resistance. What are the horizontal and vertical velocity components?",
+        "it": "Un proiettile viene lanciato a 20 m/s con un angolo di 30 gradi sopra l’orizzontale, trascurando la resistenza dell’aria. Quali sono le componenti orizzontale e verticale della velocità?",
+        "zh": "一个抛体以 20 m/s、相对水平方向 30 度发射，忽略空气阻力。它的水平和竖直速度分量是多少？",
+        "es": "Un proyectil se lanza a 20 m/s con un ángulo de 30 grados sobre la horizontal, ignorando la resistencia del aire. ¿Cuáles son las componentes horizontal y vertical de la velocidad?",
+        "fr": "Un projectile est lancé à 20 m/s avec un angle de 30 degrés au-dessus de l’horizontale, en négligeant la résistance de l’air. Quelles sont les composantes horizontale et verticale de la vitesse ?",
+        "de": "Ein Projektil wird mit 20 m/s in einem Winkel von 30 Grad über der Horizontalen gestartet, Luftwiderstand wird vernachlässigt. Wie groß sind die horizontale und vertikale Geschwindigkeitskomponente?",
+        "pt": "Um projétil é lançado a 20 m/s com ângulo de 30 graus acima da horizontal, ignorando a resistência do ar. Quais são as componentes horizontal e vertical da velocidade?"
+      }
+    },
+    {
+      "id": "physics_02_energy_pendulum",
+      "domain": "physics",
+      "task_type": "conceptual_calculation",
+      "difficulty": "medium",
+      "answer_style": "formula_and_explanation",
+      "prompts": {
+        "en": "A simple pendulum is released from a small angle. Explain how gravitational potential energy converts to kinetic energy at the lowest point.",
+        "it": "Un pendolo semplice viene rilasciato da un piccolo angolo. Spiega come l’energia potenziale gravitazionale si converte in energia cinetica nel punto più basso.",
+        "zh": "一个简单摆从小角度释放。解释重力势能如何在最低点转化为动能。",
+        "es": "Un péndulo simple se suelta desde un ángulo pequeño. Explica cómo la energía potencial gravitatoria se convierte en energía cinética en el punto más bajo.",
+        "fr": "Un pendule simple est relâché depuis un petit angle. Explique comment l’énergie potentielle gravitationnelle se transforme en énergie cinétique au point le plus bas.",
+        "de": "Ein einfaches Pendel wird aus einem kleinen Winkel losgelassen. Erkläre, wie sich die gravitative potenzielle Energie am tiefsten Punkt in kinetische Energie umwandelt.",
+        "pt": "Um pêndulo simples é solto a partir de um pequeno ângulo. Explique como a energia potencial gravitacional se converte em energia cinética no ponto mais baixo."
+      }
+    },
+    {
+      "id": "physics_03_rc_circuit",
+      "domain": "physics",
+      "task_type": "calculation",
+      "difficulty": "medium",
+      "answer_style": "formula_and_numeric_answer",
+      "prompts": {
+        "en": "In an RC circuit with R = 10 kΩ and C = 100 µF, what is the time constant? Explain what happens after one time constant during charging.",
+        "it": "In un circuito RC con R = 10 kΩ e C = 100 µF, qual è la costante di tempo? Spiega che cosa accade dopo una costante di tempo durante la carica.",
+        "zh": "在一个 RC 电路中，R = 10 kΩ，C = 100 µF，时间常数是多少？解释充电过程中经过一个时间常数后会发生什么。",
+        "es": "En un circuito RC con R = 10 kΩ y C = 100 µF, ¿cuál es la constante de tiempo? Explica qué ocurre después de una constante de tiempo durante la carga.",
+        "fr": "Dans un circuit RC avec R = 10 kΩ et C = 100 µF, quelle est la constante de temps ? Explique ce qui se passe après une constante de temps pendant la charge.",
+        "de": "In einer RC-Schaltung mit R = 10 kΩ und C = 100 µF: Wie groß ist die Zeitkonstante? Erkläre, was beim Laden nach einer Zeitkonstante passiert.",
+        "pt": "Em um circuito RC com R = 10 kΩ e C = 100 µF, qual é a constante de tempo? Explique o que acontece após uma constante de tempo durante o carregamento."
+      }
+    },
+    {
+      "id": "physics_04_thermodynamics",
+      "domain": "physics",
+      "task_type": "conceptual",
+      "difficulty": "medium",
+      "answer_style": "concise_explanation",
+      "prompts": {
+        "en": "Explain the difference between heat and temperature using the ideal gas model as an example.",
+        "it": "Spiega la differenza tra calore e temperatura usando il modello del gas ideale come esempio.",
+        "zh": "用理想气体模型作为例子，解释热量和温度的区别。",
+        "es": "Explica la diferencia entre calor y temperatura usando el modelo de gas ideal como ejemplo.",
+        "fr": "Explique la différence entre chaleur et température en utilisant le modèle du gaz idéal comme exemple.",
+        "de": "Erkläre den Unterschied zwischen Wärme und Temperatur am Beispiel des idealen Gasmodells.",
+        "pt": "Explique a diferença entre calor e temperatura usando o modelo de gás ideal como exemplo."
+      }
+    },
+    {
+      "id": "engineering_01_safety_factor",
+      "domain": "engineering",
+      "task_type": "calculation",
+      "difficulty": "easy",
+      "answer_style": "formula_and_numeric_answer",
+      "prompts": {
+        "en": "A bracket must support a 500 N load. If the material yield limit corresponds to 2000 N for this geometry, what is the safety factor and is it acceptable for a target of 3?",
+        "it": "Una staffa deve sostenere un carico di 500 N. Se il limite di snervamento del materiale corrisponde a 2000 N per questa geometria, qual è il fattore di sicurezza ed è accettabile per un obiettivo di 3?",
+        "zh": "一个支架必须承受 500 N 的载荷。如果该几何形状下材料屈服极限对应 2000 N，安全系数是多少？对于目标安全系数 3 是否可接受？",
+        "es": "Un soporte debe aguantar una carga de 500 N. Si el límite de fluencia del material corresponde a 2000 N para esta geometría, ¿cuál es el factor de seguridad y es aceptable para un objetivo de 3?",
+        "fr": "Une équerre doit supporter une charge de 500 N. Si la limite d’élasticité du matériau correspond à 2000 N pour cette géométrie, quel est le facteur de sécurité et est-il acceptable pour un objectif de 3 ?",
+        "de": "Eine Halterung muss eine Last von 500 N tragen. Wenn die Streckgrenze des Materials für diese Geometrie 2000 N entspricht, wie groß ist der Sicherheitsfaktor und ist er für ein Ziel von 3 akzeptabel?",
+        "pt": "Um suporte deve sustentar uma carga de 500 N. Se o limite de escoamento do material corresponde a 2000 N para esta geometria, qual é o fator de segurança e ele é aceitável para uma meta de 3?"
+      }
+    },
+    {
+      "id": "engineering_02_heat_sink",
+      "domain": "engineering",
+      "task_type": "design_reasoning",
+      "difficulty": "medium",
+      "answer_style": "tradeoffs",
+      "prompts": {
+        "en": "A chip dissipates 15 W and overheats in a sealed box. Suggest three engineering changes to reduce its temperature and explain the trade-offs.",
+        "it": "Un chip dissipa 15 W e si surriscalda in una scatola sigillata. Suggerisci tre modifiche ingegneristiche per ridurne la temperatura e spiega i compromessi.",
+        "zh": "一个芯片耗散 15 W，在密封盒中会过热。提出三种降低温度的工程改动，并解释权衡。",
+        "es": "Un chip disipa 15 W y se sobrecalienta en una caja sellada. Sugiere tres cambios de ingeniería para reducir su temperatura y explica las compensaciones.",
+        "fr": "Une puce dissipe 15 W et surchauffe dans un boîtier fermé. Propose trois modifications d’ingénierie pour réduire sa température et explique les compromis.",
+        "de": "Ein Chip gibt 15 W Verlustleistung ab und überhitzt in einem geschlossenen Gehäuse. Schlage drei technische Änderungen vor, um seine Temperatur zu senken, und erkläre die Kompromisse.",
+        "pt": "Um chip dissipa 15 W e superaquece em uma caixa selada. Sugira três mudanças de engenharia para reduzir sua temperatura e explique os trade-offs."
+      }
+    },
+    {
+      "id": "engineering_03_control_loop",
+      "domain": "engineering",
+      "task_type": "conceptual_debugging",
+      "difficulty": "medium",
+      "answer_style": "diagnosis_and_mitigation",
+      "prompts": {
+        "en": "A temperature control loop oscillates around the setpoint after increasing the proportional gain. Explain why this can happen and name two mitigations.",
+        "it": "Un anello di controllo della temperatura oscilla attorno al setpoint dopo aver aumentato il guadagno proporzionale. Spiega perché può accadere e indica due mitigazioni.",
+        "zh": "在增大比例增益后，一个温度控制回路围绕设定点振荡。解释为什么会发生这种情况，并给出两种缓解措施。",
+        "es": "Un lazo de control de temperatura oscila alrededor del punto de consigna después de aumentar la ganancia proporcional. Explica por qué puede ocurrir y nombra dos mitigaciones.",
+        "fr": "Une boucle de contrôle de température oscille autour de la consigne après l’augmentation du gain proportionnel. Explique pourquoi cela peut arriver et cite deux mesures d’atténuation.",
+        "de": "Ein Temperatur-Regelkreis oszilliert nach Erhöhung der proportionalen Verstärkung um den Sollwert. Erkläre, warum das passieren kann, und nenne zwei Gegenmaßnahmen.",
+        "pt": "Uma malha de controle de temperatura oscila em torno do setpoint após aumentar o ganho proporcional. Explique por que isso pode acontecer e cite duas mitigações."
+      }
+    },
+    {
+      "id": "cs_01_complexity",
+      "domain": "computer_science",
+      "task_type": "conceptual",
+      "difficulty": "easy",
+      "answer_style": "comparison_table",
+      "prompts": {
+        "en": "Compare average-case lookup time for a hash table, a balanced binary search tree, and a sorted array. Include one advantage of each.",
+        "it": "Confronta il tempo medio di lookup per una hash table, un albero binario di ricerca bilanciato e un array ordinato. Includi un vantaggio di ciascuno.",
+        "zh": "比较哈希表、平衡二叉搜索树和有序数组在平均情况下的查找时间。包括每种结构的一个优点。",
+        "es": "Compara el tiempo medio de búsqueda para una tabla hash, un árbol binario de búsqueda balanceado y un arreglo ordenado. Incluye una ventaja de cada uno.",
+        "fr": "Compare le temps moyen de recherche pour une table de hachage, un arbre binaire de recherche équilibré et un tableau trié. Inclus un avantage de chacun.",
+        "de": "Vergleiche die durchschnittliche Suchzeit für eine Hash-Tabelle, einen balancierten binären Suchbaum und ein sortiertes Array. Nenne je einen Vorteil.",
+        "pt": "Compare o tempo médio de busca de uma tabela hash, uma árvore binária de busca balanceada e um array ordenado. Inclua uma vantagem de cada um."
+      }
+    },
+    {
+      "id": "cs_02_database_transactions",
+      "domain": "computer_science",
+      "task_type": "conceptual",
+      "difficulty": "medium",
+      "answer_style": "concise_explanation",
+      "prompts": {
+        "en": "Explain the difference between isolation and durability in ACID database transactions. Give one example anomaly that isolation prevents.",
+        "it": "Spiega la differenza tra isolamento e durabilità nelle transazioni ACID dei database. Fornisci un esempio di anomalia prevenuta dall’isolamento.",
+        "zh": "解释数据库 ACID 事务中隔离性和持久性的区别。给出一个隔离性可以防止的异常示例。",
+        "es": "Explica la diferencia entre aislamiento y durabilidad en las transacciones ACID de bases de datos. Da un ejemplo de anomalía que evita el aislamiento.",
+        "fr": "Explique la différence entre isolation et durabilité dans les transactions ACID d’une base de données. Donne un exemple d’anomalie que l’isolation empêche.",
+        "de": "Erkläre den Unterschied zwischen Isolation und Dauerhaftigkeit bei ACID-Datenbanktransaktionen. Gib ein Beispiel für eine Anomalie, die Isolation verhindert.",
+        "pt": "Explique a diferença entre isolamento e durabilidade em transações ACID de banco de dados. Dê um exemplo de anomalia que o isolamento evita."
+      }
+    },
+    {
+      "id": "cs_03_raft_consensus",
+      "domain": "computer_science",
+      "task_type": "systems_reasoning",
+      "difficulty": "medium",
+      "answer_style": "structured_explanation",
+      "prompts": {
+        "en": "In Raft consensus, why does the system elect a leader, and what problem does the replicated log solve?",
+        "it": "Nel consenso Raft, perché il sistema elegge un leader e quale problema risolve il log replicato?",
+        "zh": "在 Raft 共识算法中，系统为什么要选举领导者？复制日志解决了什么问题？",
+        "es": "En el consenso Raft, ¿por qué el sistema elige un líder y qué problema resuelve el log replicado?",
+        "fr": "Dans le consensus Raft, pourquoi le système élit-il un leader et quel problème le journal répliqué résout-il ?",
+        "de": "Warum wählt das System im Raft-Konsens einen Leader, und welches Problem löst das replizierte Log?",
+        "pt": "No consenso Raft, por que o sistema elege um líder e que problema o log replicado resolve?"
+      }
+    },
+    {
+      "id": "chemistry_01_balancing",
+      "domain": "chemistry",
+      "task_type": "calculation",
+      "difficulty": "easy",
+      "answer_style": "balanced_equation_and_steps",
+      "prompts": {
+        "en": "Balance the chemical equation: C3H8 + O2 -> CO2 + H2O. Show the final balanced equation.",
+        "it": "Bilancia l’equazione chimica: C3H8 + O2 -> CO2 + H2O. Mostra l’equazione finale bilanciata.",
+        "zh": "配平化学方程式：C3H8 + O2 -> CO2 + H2O。给出最终配平后的方程式。",
+        "es": "Balancea la ecuación química: C3H8 + O2 -> CO2 + H2O. Muestra la ecuación final balanceada.",
+        "fr": "Équilibre l’équation chimique : C3H8 + O2 -> CO2 + H2O. Montre l’équation finale équilibrée.",
+        "de": "Gleiche die chemische Gleichung aus: C3H8 + O2 -> CO2 + H2O. Zeige die endgültig ausgeglichene Gleichung.",
+        "pt": "Balanceie a equação química: C3H8 + O2 -> CO2 + H2O. Mostre a equação final balanceada."
+      }
+    },
+    {
+      "id": "chemistry_02_buffer_ph",
+      "domain": "chemistry",
+      "task_type": "calculation",
+      "difficulty": "medium",
+      "answer_style": "formula_and_numeric_answer",
+      "prompts": {
+        "en": "Use the Henderson-Hasselbalch equation to estimate the pH of a buffer with pKa = 4.76 and [A-]/[HA] = 10.",
+        "it": "Usa l’equazione di Henderson-Hasselbalch per stimare il pH di un tampone con pKa = 4,76 e [A-]/[HA] = 10.",
+        "zh": "使用 Henderson-Hasselbalch 方程估算缓冲液的 pH，其中 pKa = 4.76，[A-]/[HA] = 10。",
+        "es": "Usa la ecuación de Henderson-Hasselbalch para estimar el pH de un tampón con pKa = 4,76 y [A-]/[HA] = 10.",
+        "fr": "Utilise l’équation de Henderson-Hasselbalch pour estimer le pH d’un tampon avec pKa = 4,76 et [A-]/[HA] = 10.",
+        "de": "Verwende die Henderson-Hasselbalch-Gleichung, um den pH-Wert eines Puffers mit pKa = 4,76 und [A-]/[HA] = 10 abzuschätzen.",
+        "pt": "Use a equação de Henderson-Hasselbalch para estimar o pH de um tampão com pKa = 4,76 e [A-]/[HA] = 10."
+      }
+    },
+    {
+      "id": "chemistry_03_reaction_rate",
+      "domain": "chemistry",
+      "task_type": "conceptual",
+      "difficulty": "medium",
+      "answer_style": "concise_explanation",
+      "prompts": {
+        "en": "Explain how increasing temperature usually affects reaction rate, and relate your answer to activation energy.",
+        "it": "Spiega come l’aumento della temperatura di solito influisce sulla velocità di reazione e collega la risposta all’energia di attivazione.",
+        "zh": "解释升高温度通常如何影响反应速率，并将答案与活化能联系起来。",
+        "es": "Explica cómo el aumento de la temperatura suele afectar la velocidad de reacción y relaciona tu respuesta con la energía de activación.",
+        "fr": "Explique comment l’augmentation de la température affecte généralement la vitesse de réaction et relie ta réponse à l’énergie d’activation.",
+        "de": "Erkläre, wie eine Temperaturerhöhung normalerweise die Reaktionsgeschwindigkeit beeinflusst, und beziehe deine Antwort auf die Aktivierungsenergie.",
+        "pt": "Explique como o aumento da temperatura geralmente afeta a velocidade de reação e relacione sua resposta à energia de ativação."
+      }
+    },
+    {
+      "id": "cybersecurity_01_phishing_triage",
+      "domain": "cybersecurity",
+      "task_type": "defensive_triage",
+      "difficulty": "easy",
+      "answer_style": "risk_assessment_and_actions",
+      "prompts": {
+        "en": "A user reports an email asking them to reset their password through a shortened link. Explain how to triage it safely and list three indicators of phishing.",
+        "it": "Un utente segnala un’email che chiede di reimpostare la password tramite un link abbreviato. Spiega come analizzarla in sicurezza e indica tre segnali di phishing.",
+        "zh": "一名用户报告收到一封邮件，要求通过短链接重置密码。解释如何安全地进行分流分析，并列出三个钓鱼邮件指标。",
+        "es": "Un usuario informa de un correo que le pide restablecer su contraseña mediante un enlace acortado. Explica cómo analizarlo de forma segura y enumera tres indicadores de phishing.",
+        "fr": "Un utilisateur signale un e-mail lui demandant de réinitialiser son mot de passe via un lien raccourci. Explique comment le trier en toute sécurité et cite trois indicateurs de phishing.",
+        "de": "Ein Benutzer meldet eine E-Mail, die ihn auffordert, sein Passwort über einen Kurzlink zurückzusetzen. Erkläre, wie man sie sicher triagiert, und nenne drei Phishing-Indikatoren.",
+        "pt": "Um usuário relata um e-mail pedindo para redefinir a senha por meio de um link encurtado. Explique como fazer a triagem com segurança e liste três indicadores de phishing."
+      }
+    },
+    {
+      "id": "cybersecurity_02_log_triage",
+      "domain": "cybersecurity",
+      "task_type": "defensive_log_analysis",
+      "difficulty": "medium",
+      "answer_style": "triage_steps_and_hypotheses",
+      "prompts": {
+        "en": "A web server log shows repeated 401 responses from one IP followed by one successful 200 login for an admin account. Explain what this could indicate and what defensive evidence to collect next.",
+        "it": "Un log di un web server mostra ripetute risposte 401 da un singolo IP seguite da un login 200 riuscito per un account amministratore. Spiega cosa potrebbe indicare e quali evidenze difensive raccogliere dopo.",
+        "zh": "Web 服务器日志显示来自同一 IP 的多次 401 响应，随后管理员账户出现一次成功的 200 登录。解释这可能表示什么，以及接下来应收集哪些防御性证据。",
+        "es": "Un registro de servidor web muestra respuestas 401 repetidas desde una IP seguidas de un inicio de sesión 200 exitoso para una cuenta de administrador. Explica qué podría indicar y qué evidencia defensiva recopilar después.",
+        "fr": "Un journal de serveur web montre des réponses 401 répétées depuis une même IP, suivies d’une connexion 200 réussie pour un compte administrateur. Explique ce que cela peut indiquer et quelles preuves défensives collecter ensuite.",
+        "de": "Ein Webserver-Log zeigt wiederholte 401-Antworten von einer IP, gefolgt von einem erfolgreichen 200-Login für ein Administratorkonto. Erkläre, worauf das hinweisen könnte und welche defensiven Belege als Nächstes gesammelt werden sollten.",
+        "pt": "Um log de servidor web mostra respostas 401 repetidas de um IP seguidas por um login 200 bem-sucedido em uma conta de administrador. Explique o que isso pode indicar e quais evidências defensivas coletar em seguida."
+      }
+    },
+    {
+      "id": "cybersecurity_03_threat_modeling",
+      "domain": "cybersecurity",
+      "task_type": "defensive_design_review",
+      "difficulty": "medium",
+      "answer_style": "threats_and_mitigations",
+      "prompts": {
+        "en": "Threat-model a small API that accepts file uploads from authenticated users and stores them in object storage. List five security risks and one mitigation for each.",
+        "it": "Fai un threat model di una piccola API che accetta upload di file da utenti autenticati e li salva in object storage. Elenca cinque rischi di sicurezza e una mitigazione per ciascuno.",
+        "zh": "对一个小型 API 进行威胁建模：它接受已认证用户上传文件，并将文件存储到对象存储中。列出五个安全风险，并为每个风险给出一个缓解措施。",
+        "es": "Haz un modelo de amenazas para una pequeña API que acepta cargas de archivos de usuarios autenticados y los almacena en object storage. Enumera cinco riesgos de seguridad y una mitigación para cada uno.",
+        "fr": "Réalise un modèle de menaces pour une petite API qui accepte des téléversements de fichiers d’utilisateurs authentifiés et les stocke dans un stockage objet. Liste cinq risques de sécurité et une mitigation pour chacun.",
+        "de": "Erstelle ein Threat Model für eine kleine API, die Datei-Uploads von authentifizierten Benutzern annimmt und sie in Object Storage speichert. Nenne fünf Sicherheitsrisiken und je eine Gegenmaßnahme.",
+        "pt": "Faça um modelo de ameaças para uma pequena API que aceita uploads de arquivos de usuários autenticados e os armazena em object storage. Liste cinco riscos de segurança e uma mitigação para cada um."
+      }
+    }
+  ]
+}

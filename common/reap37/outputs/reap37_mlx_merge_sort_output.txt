@@ -1,0 +1,47 @@
+starting REAP37 MLX merge-sort baseline at Sat Jun 20 04:40:06 CEST 2026
+model_dir=/Volumes/Data NVME/GLM-5.2-REAP37-MLX-4bit-indexer-compat
+prompt=Write down a merge sort algo non recursive in Python. Do not explain your reasoning. Output the Python code first, then one short sentence.
+max_tokens=1400
+==========
+```python
+def merge_sort(arr):
+    if not arr:
+        return []
+    
+    queue = [[val] for val in arr]
+    
+    while len(queue) > 1:
+        merged_queue = []
+        for i in range(0, len(queue), 2):
+            if i + 1 < len(queue):
+                merged_queue.append(merge(queue[i], queue[i+1]))
+            else:
+                merged_queue.append(queue[i])
+        queue = merged_queue
+        
+    return queue[0]
+
+def merge(left, right):
+    result = []
+    i = j = 0
+    while i < len(left) and j < len(right):
+        if left[i] <= right[j]:
+            result.append(left[i])
+            i += 1
+        else:
+            result.append(right[j])
+            j += 1
+    result.extend(left[i:])
+    result.extend(right[j:])
+    return result
+```
+This implementation processes the array iteratively by merging pairs of sublists until the entire list is sorted.
+==========
+Prompt: 34 tokens, 7.845 tokens-per-sec
+Generation: 209 tokens, 18.053 tokens-per-sec
+Peak memory: 265.802 GB
+real 69.10
+user 7.34
+sys 48.66
+
+exit_status=0 at Sat Jun 20 04:41:15 CEST 2026

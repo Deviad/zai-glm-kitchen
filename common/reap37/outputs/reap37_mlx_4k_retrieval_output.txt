@@ -1,0 +1,91 @@
+starting REAP37 MLX long-context retrieval baseline at Sat Jun 20 04:46:55 CEST 2026
+model_dir=/Volumes/Data NVME/GLM-5.2-REAP37-MLX-4bit-indexer-compat
+prompt_file=/Volumes/Data NVME/gguf2mlx/long_coding_task_4k_retrieval_prompt.md
+prompt_tokens_estimate_with_glm_tokenizer=4855
+max_kv_size=8192
+max_tokens=300
+expected_sentinel=BLUE-FALCON-48217
+expected_function=repair_event_stream
+expected_recursion_allowed=no
+==========
+## Audit
+
+ `c145
+
+
+
+5
+
+## Existing tests
+
+1.3
+
+3l
+
+2:`:...
+
+## Existing tests
+
+...
+
+## tests/test
+
+###
+
+ the `BLUE-F"cached`-`c``:```python
+
+
+from __future__annotations__``__import__
+
+from collections import import import import annotations.0
+ The code is the project is is is test55.22 fromc.
+
+5. The `c2 BLUE-5alcon
+
+## BLUE
+
+``` The Blue-F5
+
+5
+
+
+
+ Long test case ``python
+__caching repairrepair_event_stream repair_stream```__init __init__ Blue
+__python
+``c. c the task is You produce implement be a
+import
+from cachel import import cengine import import repair_event repair_stream_stream
+5|5
+ .0.0
+2
+5 `c++:5
+
+0
+y
+c``python
+0
+` test
+
+cc
+2.00.22
+2.2c
+c``
+
+3c03020
+2.0
+02diff
+2c2_0 import 2- The0
+122c2.2.0` 1 22 test
+2.02.0
+2.3.02
+23c2d202 02c2`
+==========
+Prompt: 4861 tokens, 163.975 tokens-per-sec
+Generation: 300 tokens, 14.815 tokens-per-sec
+Peak memory: 270.156 GB
+real 94.38
+user 12.74
+sys 53.18
+
+exit_status=0 at Sat Jun 20 04:48:29 CEST 2026

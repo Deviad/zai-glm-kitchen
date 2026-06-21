@@ -1,0 +1,40 @@
+starting REAP37 MLX long-context retrieval baseline at Sat Jun 20 04:41:40 CEST 2026
+model_dir=/Volumes/Data NVME/GLM-5.2-REAP37-MLX-4bit-indexer-compat
+prompt_file=/Volumes/Data NVME/gguf2mlx/long_coding_task_20k_retrieval_prompt.md
+prompt_tokens_estimate_with_glm_tokenizer=18745
+max_kv_size=32768
+max_tokens=700
+expected_sentinel=BLUE-FALCON-48217
+expected_function=repair_event_stream
+expected_recursion_allowed=no
+==========
+The|0
+ 00.0.0.0.   The``:. 0 `0.0.0.0
+
+0 ``  the0. 00.``.00.0.0.``}0.0
+ ` - |0:0.0. 4. #|0) ```. 0.0.0. The ##_# 0. The0.0.0. 0. ||`
+
+# 2,.0:
+ 00.0.0.0..0.``0. #0.0. `}.0.0002 of0.0.| The. not0.``.0. 0..0.00.| `:. 000. 00)```
+0.0. 00.0.00.0.0.020.0)0._ file
+0.`0. The. `0:`.0.0.0:` 0. 0. `0.0.0000-0.0.02 to00.0 file0-00``00.`.`:0.0}``001000. #0000}`0. The.10.00. and
+#0.0.0.  The. 0
+
+.0.2.0_0: The:0.00000. 1 `` and
+0 that g0.0.
+0. 000 0.`0.0.0. |0. 0. 0 -0.00.0. `0-#00:0.#0.0. The0. `.0.  and a0. The `00. 0. `0. -0. -0.00.0.0200.0.0..000.0. The0.000.0..x00002c0 `-002 ``
+000.`-000.0.0. -...
+
+`` 3-0.0.00-00.000.0.#. 0.|0.0.`-0. 0. `0.``.0...0..0.1. `0000.0.0. -. 000.0
+00.`` and0.`0000 00 `c.0.0. 0.0.`
+.00. The,.0.0.  to00009 `0. The -10 public# - `2.0. #..,500. - BLUE:0.00 -00.`` -0.0.000 -0.`#0 the0``:0.
+``. `#`.|00. The  `00.0.0.0.0.0.0.00.
+==========
+Prompt: 18751 tokens, 109.571 tokens-per-sec
+Generation: 700 tokens, 13.924 tokens-per-sec
+Peak memory: 281.155 GB
+real 264.51
+user 29.80
+sys 63.46
+
+exit_status=0 at Sat Jun 20 04:46:04 CEST 2026
