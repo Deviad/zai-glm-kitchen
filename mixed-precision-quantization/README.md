@@ -43,6 +43,17 @@ patched build (handle via `build_llamacpp.sh`).
 | `quant_glm52_mixed.sh` | runs `llama-quantize` with the IQ2_S-experts + IQ4_NL-rest policy across all 9 shards. References `./build_llamacpp.sh` for the binary path resolution. |
 | `verify_glm52_mixed.py` | cross-checks the output GGUF tensor → quantization mapping (`225 IQ2_S experts + 3 IQ4_NL MTP + 0 IQ2 non-experts` invariant) |
 
+## Dry-run integration check
+
+Run `quant_glm52_mixed.sh --dry-run` before a real quantization pass. It is
+idempotent: it must not update `glm52_tensor_types.txt` or create GGUF output
+shards. It validates the source shards, imatrix, generated tensor-type mapping,
+GGUF metadata scan, size estimate, and then executes native
+`llama-quantize --dry-run` with the same planned options to catch binary / CLI /
+GLM-DSA / imatrix / tensor-type-file regressions. Exit code contract: `0` means
+all checks passed; any non-zero status means dry-run failure or invalid CLI
+invocation and stderr names the error.
+
 ## Model output location
 
 The mixed-precision GGUF lands in `$MODEL_DIR/GLM-5.2-mixed-IQ2S-experts-IQ4NL-rest/`

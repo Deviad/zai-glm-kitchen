@@ -1,0 +1,54 @@
+name: GLM-5.2 dry-run integration
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/glm52-dry-run.yml"
+      - "mixed-precision-quantization/**"
+      - "layer-level-structured-pruning/**"
+      - "vendor/llama.cpp/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/glm52-dry-run.yml"
+      - "mixed-precision-quantization/**"
+      - "layer-level-structured-pruning/**"
+      - "vendor/llama.cpp/**"
+
+jobs:
+  dry-run:
+    # Requires a self-hosted macOS runner with:
+    # - /Volumes/Data NVME/GLM-5.2-GGUF populated
+    # - vendor/llama.cpp/build-metal/bin/llama-quantize built
+    # - Python deps for prune_layers.py available (gguf + numpy)
+    runs-on: [self-hosted, macOS]
+    timeout-minutes: 120
+    env:
+      MIXED_MODEL_DIR: /Volumes/Data NVME/GLM-5.2-GGUF/GLM-5.2-mixed-IQ2S-experts-IQ4NL-rest
+      BI_PLAN: layer-level-structured-pruning/reports/glm52_shortgpt_bi_scores.json
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Syntax checks
+        shell: bash
+        run: |
+          bash -n mixed-precision-quantization/scripts/quant_glm52_mixed.sh
+          python3 -m py_compile layer-level-structured-pruning/scripts/prune_layers.py
+
+      - name: Quantization dry-run integration
+        shell: bash
+        run: |
+          ./mixed-precision-quantization/scripts/quant_glm52_mixed.sh --dry-run
+
+      - name: Layer-pruning dry-run integration
+        shell: bash
+        run: |
+          python3 layer-level-structured-pruning/scripts/prune_layers.py \
+            --input-dir "$MIXED_MODEL_DIR" \
+            --plan "$BI_PLAN" \
+            --dry-run

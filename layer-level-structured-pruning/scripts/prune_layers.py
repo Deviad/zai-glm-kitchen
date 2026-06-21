@@ -26,6 +26,12 @@ Usage::
         --output-dir /Volumes/Data NVME/GLM-5.2-GGUF/GLM-5.2-shortgpt-pruned-IQ2S-experts-IQ4NL-rest \\
         --plan       reports/glm52_shortgpt_bi_scores.json
 
+    # Dry-run: validate inputs, scan shards, report changes without writing:
+    python3 scripts/prune_layers.py \\
+        --input-dir  /Volumes/Data NVME/GLM-5.2-GGUF/GLM-5.2-shortgpt-IQ2S-experts-IQ4NL-rest \\
+        --plan       reports/glm52_shortgpt_bi_scores.json \\
+        --dry-run
+
 The output-dir basename is preserved across shards so the loader still
 discovers them via the 0000N-of-00009 pattern. The existing model stays
 untouched.
@@ -33,18 +39,39 @@ untouched.
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import re
 import sys
 from pathlib import Path
 
-# Local import — same folder.
+# Local import — same folder. Keep eager so --dry-run also validates the
+# pruning stack imports as a lightweight integration check.
 sys.path.insert(0, str(Path(__file__).parent))
-import prune_gguf  # noqa: E402
+try:
+    import prune_gguf  # noqa: E402
+except Exception as exc:  # pragma: no cover - import-time integration guard
+    print(f"ERROR: failed to import prune_gguf integration dependency: {exc}", file=sys.stderr)
+    sys.exit(1)
 
-import gguf  # noqa: E402
+try:
+    import gguf  # noqa: E402
+except Exception as exc:  # pragma: no cover - import-time integration guard
+    print(f"ERROR: failed to import gguf dependency: {exc}", file=sys.stderr)
+    sys.exit(1)
 
 BLK_RE = re.compile(r"^blk\.(\d+)\.(.+)$")
+
+
+def validate_prune_gguf_api() -> None:
+    """Validate prune_gguf hooks needed by both dry-run and normal mode."""
+    if not hasattr(prune_gguf, "prune_gguf"):
+        raise AttributeError("module prune_gguf has no prune_gguf()")
+    params = inspect.signature(prune_gguf.prune_gguf).parameters
+    required = {"tensor_name_remap", "kv_overrides"}
+    missing = sorted(required.difference(params))
+    if missing:
+        raise TypeError(f"prune_gguf.prune_gguf() missing required hook parameter(s): {missing}")
 
 
 def make_remap(renumber_map: dict[int, int], drop_set: set[int]):
@@ -70,7 +97,7 @@ def make_remap(renumber_map: dict[int, int], drop_set: set[int]):
     return remap
 
 
-def count_dropped_tensors(input_dir: Path, drop_set: set[int]) -> int:
+def count_dropped_tensors(input_dir: Path, drop_set: set[int]) -> tuple[int, dict[int, int]]:
     """Scan all shards and sum tensors whose name matches a dropped layer.
 
     Used to patch split.tensors.count in the metadata shard (shard 1).
@@ -94,14 +121,127 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--input-dir", "-i", required=True, type=Path)
-    ap.add_argument("--output-dir", "-o", required=True, type=Path)
+    ap.add_argument("--output-dir", "-o", type=Path,
+                    help="Output directory for pruned shards (required without --dry-run)")
     ap.add_argument("--plan", "-p", required=True, type=Path)
     ap.add_argument("--force", action="store_true",
                     help="Overwrite output shards if they exist")
+    ap.add_argument("--dry-run", "-n", action="store_true",
+                    help="Validate inputs, scan shards, report planned changes, "
+                         "and exit without writing any files")
     args = ap.parse_args()
+
+    try:
+        validate_prune_gguf_api()
+    except Exception as exc:
+        print(f"ERROR: prune_gguf integration check failed: {exc}", file=sys.stderr)
+        return 1
 
     if not args.input_dir.is_dir():
         print(f"ERROR: input-dir not found: {args.input_dir}", file=sys.stderr)
+        return 1 if args.dry_run else 2
+
+    # ── Dry-run mode ──────────────────────────────────────────────────
+    if args.dry_run:
+        print("=" * 44)
+        print("  ShortGPT layer-drop -- DRY RUN")
+        print("=" * 44)
+        print()
+        print(f"  Input model : {args.input_dir}")
+        print(f"  BI plan     : {args.plan}")
+        print()
+
+        # Validate plan
+        if not args.plan.is_file():
+            print(f"ERROR: plan not found: {args.plan}", file=sys.stderr)
+            return 1
+        try:
+            with open(args.plan) as f:
+                plan = json.load(f)
+            required_keys = {"layers_to_drop", "renumber_map", "block_count_new"}
+            missing = sorted(required_keys.difference(plan))
+            if missing:
+                raise KeyError(f"missing required plan key(s): {missing}")
+            drop_set = set(plan["layers_to_drop"])
+            renumber_map = {int(k): int(v) for k, v in plan["renumber_map"].items()}
+            block_count_new = int(plan["block_count_new"])
+        except Exception as exc:
+            print(f"ERROR: failed to load/validate dry-run plan {args.plan}: {exc}", file=sys.stderr)
+            return 1
+        print("--- BI plan (loaded) ---")
+        print(f"  layers to drop:         {sorted(drop_set)}  (n={len(drop_set)})")
+        print(f"  kept normal layers:     {len(renumber_map)}")
+        print(f"  new block_count:        {block_count_new}")
+        print()
+
+        # Scan shards
+        try:
+            n_dropped_tensors, per_layer = count_dropped_tensors(args.input_dir, drop_set)
+            src_shards = sorted(args.input_dir.glob("*.gguf"))
+            if not src_shards:
+                raise FileNotFoundError(f"no GGUF shards found under {args.input_dir}")
+            total_tensors = 0
+            all_tensor_types: dict[str, int] = {}
+            for sh in src_shards:
+                r = gguf.GGUFReader(str(sh))
+                total_tensors += len(r.tensors)
+                for rt in r.tensors:
+                    try:
+                        tname = gguf.GGMLQuantizationType(rt.tensor_type).name
+                    except Exception:
+                        tname = f"type={int(rt.tensor_type)}"
+                    all_tensor_types[tname] = all_tensor_types.get(tname, 0) + 1
+        except Exception as exc:
+            print(f"ERROR: dry-run GGUF shard scan failed: {exc}", file=sys.stderr)
+            return 1
+
+        new_total_tensor_count = total_tensors - n_dropped_tensors
+        print(f"  Total tensors across all shards: {total_tensors}")
+        print(f"  Tensors to drop:                 {n_dropped_tensors}")
+        print(f"  Tensors to keep:                 {total_tensors - n_dropped_tensors}")
+        print()
+
+        # Per-layer drop details
+        print("  Per-layer drop details:")
+        for layer in sorted(per_layer):
+            count = per_layer[layer]
+            if count > 0:
+                print(f"    blk.{layer:2d}: {count} tensors")
+        print()
+
+        print(f"  split.tensors.count: {total_tensors} -> {new_total_tensor_count}")
+        print()
+
+        # MTP handling
+        if "78" not in {str(n) for n in drop_set} and 78 not in drop_set:
+            mtp_new_idx = len(renumber_map)
+            print(f"  MTP blk.78 stays -> renumbered to blk.{mtp_new_idx}")
+        print()
+
+        # Example renumber map
+        print("  Example renumber map (first 5 kept layers):")
+        for old in sorted(renumber_map.keys())[:5]:
+            print(f"    blk.{old:2d} -> blk.{renumber_map[old]:2d}")
+        if len(renumber_map) > 5:
+            print(f"    ... ({len(renumber_map) - 5} more)")
+        print()
+
+        # Shard tensor types
+        if all_tensor_types:
+            print("  Current shard tensor types:")
+            for k, v in sorted(all_tensor_types.items(), key=lambda x: -x[1]):
+                print(f"    {v:>6d}  {k}")
+            print()
+
+        print("--- Summary ---")
+        print("  Status: DRY RUN COMPLETE -- no files written, no shards updated")
+        print("  Next step: run prune_layers.py without --dry-run to apply changes")
+        print("=" * 44)
+        return 0
+
+    # ── Normal mode: write pruned shards ──────────────────────────────
+    if not args.output_dir:
+        print("ERROR: --output-dir is required without --dry-run", file=sys.stderr)
         return 2
     if args.output_dir.exists() and any(args.output_dir.iterdir()):
         if not args.force:
@@ -120,6 +260,7 @@ def main() -> int:
     print(f"  layers to drop:         {sorted(drop_set)}  (n={len(drop_set)})")
     print(f"  kept normal layers:     {len(renumber_map)}  (with layer 0 always kept)")
     print(f"  new glm-dsa.block_count: {block_count_new}")
+    print()
 
     # Scan shards first to compute the patched split.tensors.count.
     # Treat MTP / blk.78 specially: if it's not in drop_set (we never drop MTP
@@ -130,9 +271,9 @@ def main() -> int:
           + ", ".join(f"blk.{n}={c}" for n, c in sorted(per_layer.items())))
 
     # Original tensor count
-    src_shards = sorted(args.input_dir.glob("*.gguf"))
+    src_shards_orig = sorted(args.input_dir.glob("*.gguf"))
     orig_total = 0
-    for sh in src_shards:
+    for sh in src_shards_orig:
         r = gguf.GGUFReader(str(sh))
         orig_total += len(r.tensors)
     new_total_tensor_count = orig_total - n_dropped_tensors
@@ -157,7 +298,7 @@ def main() -> int:
     src_marker = src_basename
     new_marker = new_basename
 
-    for shard in src_shards:
+    for shard in src_shards_orig:
         out_name = shard.name.replace(src_marker, new_marker)
         if out_name == shard.name:
             # No marker substitution happened (shouldn't happen for our setup,

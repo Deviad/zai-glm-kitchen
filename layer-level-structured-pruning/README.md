@@ -28,6 +28,16 @@ layers with no two adjacent (adjacency cap = 1, empirically validated safe).
 | `prune_layers.py` | Multi-shard layer-drop driver for GLM-5.2. Reads a BI plan JSON (produced by analyze_bi_scores.py), processes all 9 shards: drops `blk.N.*` for dropped layers, renumbers kept `blk.N.*` → `blk.{new_idx}.*`, patches `glm-dsa.block_count` + `split.tensors.count` (as INT32) in shard 1, renames `blk.78` MTP → `blk.{len(kept_normal)}`. Imports `prune_gguf` via `sys.path.insert(Path(__file__).parent)` — both scripts must stay co-located. |
 | `analyze_bi_scores.py` | Aggregate per-layer BI scores from trace JSONL. CLI: `--top-n N` + `--max-contiguous-drops N` (default=1, empirically-validated safe pattern). Produces plan JSON with `layers_to_drop`, `renumber_map`, `block_count_new`. |
 
+## Dry-run integration check
+
+Run `prune_layers.py --dry-run` before writing pruned shards. It is idempotent:
+it does not create output directories or GGUF shards. It eagerly imports
+`prune_gguf`, validates the pruning hook API, loads the BI plan, scans source
+GGUF shards, reports dropped/kept tensor counts, and previews `blk.78` MTP
+renumbering. Exit code contract: `0` means all checks passed; any non-zero
+status means dry-run failure or invalid CLI invocation and stderr names the
+error.
+
 ## Reports (12)
 
 - `glm52_shortgpt_bi_scores.{json,md}` — original top-N=16 contiguous plan

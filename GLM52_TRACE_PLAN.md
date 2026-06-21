@@ -420,6 +420,17 @@ Acceptance criteria:
 - ✅ Project memory files are updated with major findings. (`GLM52_SESSION_MEMORY.md` is the canonical findings record per AGENTS.md; `GLM52_TRACE_PLAN.md` session-status section tracks phase progress; both updated each round.)
 - ✅ Trace artifacts are stored under predictable `traces/` and `reports/` paths. (Traces: `traces/<batch_name>/<test_id>-<language>.jsonl`. Reports: `reports/glm52_<study_name>_report.md` + `_summary.json`. Both directories documented in `traces/README.md`.)
 
+### Story 10 — CI maintainer validates quantization/pruning scripts without rewriting models
+
+**As a CI maintainer, I need quantization and layer-pruning dry-runs to behave like idempotent integration tests, so that GitHub Actions can catch script, dependency, llama.cpp CLI, and GGUF plan regressions without producing model artifacts.**
+
+Acceptance criteria:
+
+- ✅ `mixed-precision-quantization/scripts/quant_glm52_mixed.sh --dry-run` validates source shards, imatrix, tensor-type mapping, GGUF metadata scan, and native `llama-quantize --dry-run` with the same planned options, while leaving `/Volumes/Data NVME/GLM-5.2-GGUF/glm52_tensor_types.txt` unchanged. (Verified 2026-06-21: native dry-run emitted model size 355388.74 MiB and quant size 237634.13 MiB; tensor-types mtime unchanged.)
+- ✅ `layer-level-structured-pruning/scripts/prune_layers.py --dry-run` eagerly imports `prune_gguf`, validates its hook API, loads the BI plan, scans GGUF shards, and reports dropped/kept tensor counts plus `blk.78` renumbering without creating output directories or shards. (Verified 2026-06-21: 1809 total tensors, 368 dropped, `split.tensors.count` 1809→1441, MTP→blk.62.)
+- ✅ Both dry-runs use standard CI semantics: exit `0` only when all checks pass; any non-zero exit means failure or invalid invocation and stderr explains the error. (Verified 2026-06-21: valid dry-runs exit 0; missing prune args use argparse exit 2.)
+- ✅ A GitHub Actions workflow runs syntax checks plus both dry-runs on a self-hosted macOS runner with local GLM-5.2 artifacts. (`.github/workflows/glm52-dry-run.yml`.)
+
 ## Definition of done for Phase 1
 
 Phase 1 is done when:

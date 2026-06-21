@@ -3749,3 +3749,90 @@ All four paths reuse one of these already-committed datasets:
 NO new tracing is required to START any of these. They differ only in
 the analysis algorithm applied to data already on disk.
 
+
+### 2026-06-21 — Dry-run flag consolidation audit fixes
+
+**Scope:** Consolidated the standalone quantization/pruning dry-run wrappers into
+main-script `--dry-run` modes and audited the implementation for side effects.
+
+Findings:
+
+- The first `quant_glm52_mixed.sh --dry-run` implementation wrote the persistent
+  tensor-type file (`/Volumes/Data NVME/GLM-5.2-GGUF/glm52_tensor_types.txt`) while
+  claiming "no files written". This violated the dry-run contract.
+- Its initial size estimate used shard 2 as representative of all 9 source shards
+  (`shard2_size * 9 * ratio`). That is valid enough for tensor-distribution scans
+  (shard 2 is one of the large data shards) but invalid for total-size estimation:
+  shard 1 is metadata-only and shard 9 is partial. Local source total is
+  372.7 GB / 347.1 GiB; verified mixed output is 237634.13 MiB / ~232 GiB.
+- `prune_layers.py --dry-run` intentionally keeps an eager `import prune_gguf` so
+  dry-run also acts as a lightweight integration check for the pruning stack and
+  catches dependency/API breakage before a real shard rewrite.
+
+**Fix:** `quant_glm52_mixed.sh --dry-run` now prints the tensor-type mapping via
+`emit_tensor_types` without writing the persistent file, counts shards via `find`,
+keeps GGUF scan failures visible/non-silent, and estimates output from total source
+size times the empirical verified ratio (`237634.13 / 355388.74`). Normal mode still
+writes the real tensor-type file before invoking `llama-quantize`. `prune_layers.py`
+keeps eager `prune_gguf` import by design and removed only the misleading dead shard
+count variable.
+
+Verified result:
+
+```text
+quant_glm52_mixed.sh --dry-run: exit 0; tensor_types mtime unchanged;
+  Source total: 372.7 GB / 347.1 GiB
+  Est. mixed output: ~249.2 GB / ~232.1 GiB
+  Verified prior output: 237634.13 MiB / 2.64 BPW (~232 GiB)
+
+prune_layers.py --dry-run: exit 0;
+  Total tensors: 1809; tensors to drop: 368; split.tensors.count 1809 -> 1441;
+  blk.78 MTP stays and renumbers to blk.62.
+```
+
+### 2026-06-21 — Dry-run integration-test exit contract
+
+**Scope:** Promoted both `--dry-run` modes from static previews to idempotent
+integration checks with a CI-compatible exit-code contract.
+
+**Fix:** `quant_glm52_mixed.sh --dry-run` now returns `0` only after all
+validation passes and native `llama-quantize --dry-run` succeeds with the same
+planned options (`--allow-requantize`, `--keep-split`, imatrix, and tensor-type
+mapping supplied through non-persistent process substitution). It returns non-zero
+on validation or native dry-run failure and prints an explicit `ERROR:` /
+`FATAL:` message. The persistent tensor-type file mtime remains unchanged.
+`prune_layers.py --dry-run` keeps eager `prune_gguf` import, validates the
+`prune_gguf.prune_gguf` hook API (`tensor_name_remap`, `kv_overrides`), and
+returns non-zero with a named error for invalid CLI invocation, missing/invalid
+plan, import/API failures, or GGUF scan errors.
+
+Verified result:
+
+```text
+quant_glm52_mixed.sh --dry-run: exit 0; tensor_types mtime unchanged;
+  native llama-quantize --dry-run emitted:
+  model size = 355388.74 MiB (3.95 BPW)
+  quant size = 237634.13 MiB (2.64 BPW)
+
+LLAMA_SRC=/tmp/definitely-missing-llama quant_glm52_mixed.sh --dry-run:
+  exit 1; FATAL names missing llama-quantize binary.
+
+prune_layers.py --dry-run: exit 0; import/API/plan/GGUF scan pass.
+prune_layers.py --dry-run --plan /tmp/definitely-missing-plan.json:
+  exit 1; ERROR names missing plan.
+prune_layers.py --dry-run with missing required args:
+  exit 2; argparse usage names the missing required arguments.
+```
+
+### 2026-06-21 — Dry-run CI exit-code convention correction
+
+**Scope:** Adjusted the dry-run CI contract to match standard GitHub Actions /
+Unix semantics.
+
+**Fix:** `prune_layers.py` restored argparse `required=True` for `--input-dir`
+and `--plan`, so missing required CLI arguments use argparse's normal usage
+error path. The documented CI contract is now `0 = all checks passed` and
+`non-zero = failure or invalid invocation; stderr explains`, rather than forcing
+all dry-run errors to exit `1`. Added `.github/workflows/glm52-dry-run.yml` for a
+self-hosted macOS runner that runs syntax checks, `quant_glm52_mixed.sh --dry-run`,
+and `prune_layers.py --dry-run` against the local GLM-5.2 model artifacts.
