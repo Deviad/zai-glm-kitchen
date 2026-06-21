@@ -110,7 +110,7 @@ if [[ $DRY_RUN -eq 1 ]]; then
   # Source model scan via uv run (heredoc to avoid shell-quoting issues)
   echo "--- Source metadata + tensor breakdown (shard 2) ---"
   export PY_IN_DIR="$IN_DIR" PY_BASE_BIT="$BASE_BIT" PY_TWO_BIT="$TWO_BIT"
-  if ! uv run --with gguf --with numpy python << 'PYEOF'
+  if ! uv run --no-project --with gguf --with numpy python << 'PYEOF'
 import gguf, os
 r_dir = os.environ.get('PY_IN_DIR', '')
 r1 = gguf.GGUFReader(f'{r_dir}/GLM-5.2-UD-IQ4_NL-00001-of-00009.gguf')
@@ -153,7 +153,7 @@ PYEOF
   echo ""
   echo "--- Estimated output (total source size × empirical mixed ratio) ---"
   export PY_IN_DIR="$IN_DIR"
-  if ! uv run --with gguf --with numpy python << 'PYEOF'
+  if ! uv run --no-project --with gguf --with numpy python << 'PYEOF'
 import glob
 import os
 

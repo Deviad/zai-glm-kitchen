@@ -51,7 +51,7 @@ shards. It validates the source shards, imatrix, generated tensor-type mapping,
 GGUF metadata scan, size estimate, and then executes native
 `llama-quantize --dry-run` with the same planned options to catch binary / CLI /
 GLM-DSA / imatrix / tensor-type-file regressions. Python helper scans run via
-`uv run --with gguf --with numpy python`. Exit code contract: `0` means all
+`uv run --no-project --with gguf --with numpy python`. Exit code contract: `0` means all
 checks passed; any non-zero status means dry-run failure or invalid CLI invocation
 and stderr names the error.
 

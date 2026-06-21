@@ -3873,3 +3873,27 @@ uv run --with gguf --with numpy python -m py_compile prune_layers.py prune_gguf.
 quant_glm52_mixed.sh --dry-run: exit 0; tensor-types mtime unchanged; native quant dry-run pass
 uv run --with gguf --with numpy python prune_layers.py --dry-run: exit 0
 ```
+
+### 2026-06-21 — uv no-project dry-run dependency fix
+
+**Bug:** GitHub-hosted lightweight CI failed at `uv run --with gguf --with numpy
+python -m py_compile ...` because `uv` discovered the repo `pyproject.toml` and
+attempted to build the project dependency `gguf2mlx @ vendor/gguf2mlx`. On the
+GitHub runner that path was not a Python project in the checked-out state, causing
+`does not appear to be a Python project` before the dry-run syntax check could run.
+
+**Fix:** All dry-run helper invocations that only need `gguf`/`numpy` now use
+`uv run --no-project --with gguf --with numpy python`, both in the workflow and in
+`quant_glm52_mixed.sh` embedded Python scans. This prevents uv from installing the
+kitchen project or its path dependencies for these idempotent integration checks.
+
+Verified result:
+
+```text
+uv run --no-project --with gguf --with numpy python: imports gguf,numpy OK
+workflow YAML parses
+bash -n quant_glm52_mixed.sh: pass
+uv run --no-project --with gguf --with numpy python -m py_compile prune_layers.py prune_gguf.py: pass
+quant_glm52_mixed.sh --dry-run: exit 0; native llama-quantize --dry-run pass
+uv run --no-project --with gguf --with numpy python prune_layers.py --dry-run: exit 0
+```

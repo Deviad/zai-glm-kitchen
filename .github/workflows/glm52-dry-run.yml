@@ -33,7 +33,7 @@ jobs:
         shell: bash
         run: |
           bash -n mixed-precision-quantization/scripts/quant_glm52_mixed.sh
-          uv run --with gguf --with numpy python -m py_compile \
+          uv run --no-project --with gguf --with numpy python -m py_compile \
             layer-level-structured-pruning/scripts/prune_layers.py \
             layer-level-structured-pruning/scripts/prune_gguf.py
 
@@ -67,7 +67,7 @@ jobs:
         shell: bash
         run: |
           bash -n mixed-precision-quantization/scripts/quant_glm52_mixed.sh
-          uv run --with gguf --with numpy python -m py_compile \
+          uv run --no-project --with gguf --with numpy python -m py_compile \
             layer-level-structured-pruning/scripts/prune_layers.py \
             layer-level-structured-pruning/scripts/prune_gguf.py
 
@@ -88,7 +88,7 @@ jobs:
       - name: Layer-pruning dry-run integration
         shell: bash
         run: |
-          uv run --with gguf --with numpy python \
+          uv run --no-project --with gguf --with numpy python \
             layer-level-structured-pruning/scripts/prune_layers.py \
             --input-dir "$MIXED_MODEL_DIR" \
             --plan "$BI_PLAN" \
