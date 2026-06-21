@@ -3844,3 +3844,10 @@ two-tier: a GitHub-hosted Ubuntu `lightweight` job runs syntax/compile checks, a
 a `real-model-dry-run` job runs only on a self-hosted macOS runner labeled `glm52`
 where `/Volumes/Data NVME/GLM-5.2-GGUF` and the built patched llama.cpp binaries
 already exist. GitHub orchestrates the job; the large model remains local.
+
+### 2026-06-21 — Self-hosted runner PR safety guard
+
+**Decision:** The real-model dry-run job must not run arbitrary fork PR code on
+the self-hosted `glm52` runner because that machine has local model artifacts and
+other trusted local paths mounted. The workflow now skips the self-hosted job for
+forked pull requests; lightweight GitHub-hosted syntax checks still run.

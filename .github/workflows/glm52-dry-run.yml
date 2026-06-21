@@ -37,6 +37,8 @@ jobs:
   real-model-dry-run:
     name: Real GLM-5.2 dry-run integration
     needs: lightweight
+    # Do not run untrusted fork PR code on the self-hosted runner with local models.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     # Requires a self-hosted macOS runner with custom label `glm52` and:
     # - /Volumes/Data NVME/GLM-5.2-GGUF populated
     # - vendor/llama.cpp/build-metal/bin/llama-quantize built
