@@ -31,7 +31,7 @@ class TraceWriter:
     Usage::
 
         md = RunMetadata(run_id="...", model="...", ...)
-        w = TraceWriter("traces/run.jsonl", md, backpressure="sample")
+        w = TraceWriter("common/traces/run.jsonl", md, backpressure="sample")
         for rec in records:
             w.push(rec)
         md = w.close()  # adds counters + timing, writes <trace>.meta.json

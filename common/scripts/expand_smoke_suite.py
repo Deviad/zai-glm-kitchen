@@ -3,8 +3,8 @@
 
 Examples:
   python common/scripts/expand_smoke_suite.py \
-    --suite prompts/tracing/glm52_trace_smoke_suite.json \
-    --out prompts/tracing/glm52_trace_smoke_suite.expanded.jsonl
+    --suite common/prompts/glm52_trace_smoke_suite.json \
+    --out common/prompts/glm52_trace_smoke_suite.expanded.jsonl
 
   python common/scripts/expand_smoke_suite.py --language en --domain coding
 """
@@ -26,12 +26,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--suite",
-        default="prompts/tracing/glm52_trace_smoke_suite.json",
+        default="common/prompts/glm52_trace_smoke_suite.json",
         help="Path to structured smoke suite JSON",
     )
     parser.add_argument(
         "--out",
-        default="prompts/tracing/glm52_trace_smoke_suite.expanded.jsonl",
+        default="common/prompts/glm52_trace_smoke_suite.expanded.jsonl",
         help="Output JSONL path",
     )
     parser.add_argument("--language", action="append", help="Language code filter; repeatable")

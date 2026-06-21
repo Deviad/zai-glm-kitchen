@@ -13,17 +13,17 @@ Computes:
   * rank: ascending BI  (lowest = most redundant = best ShortGPT candidate)
 
 Outputs:
-  * A markdown report at --report  (default reports/glm52_shortgpt_bi_scores.md)
-  * A JSON plan at   --plan    (default reports/glm52_shortgpt_bi_scores.json)
+  * A markdown report at --report  (default layer-level-structured-pruning/reports/glm52_shortgpt_bi_scores.md)
+  * A JSON plan at   --plan    (default layer-level-structured-pruning/reports/glm52_shortgpt_bi_scores.json)
       with ``top_n`` lowest-BI layers identified for pruning.
 
 Usage::
 
-    python3 scripts/analyze_bi_scores.py \\
-        --traces 'traces/shortgpt_bi/calib/*.jsonl' \\
+    python3 layer-level-structured-pruning/scripts/analyze_bi_scores.py \\
+        --traces 'layer-level-structured-pruning/traces/shortgpt_bi/calib/*.jsonl' \\
         --top-n 16 \\
-        --report reports/glm52_shortgpt_bi_scores.md \\
-        --plan   reports/glm52_shortgpt_bi_scores.json
+        --report layer-level-structured-pruning/reports/glm52_shortgpt_bi_scores.md \\
+        --plan   layer-level-structured-pruning/reports/glm52_shortgpt_bi_scores.json
 """
 from __future__ import annotations
 
@@ -274,12 +274,12 @@ def main() -> None:
     ap.add_argument(
         "--report",
         type=Path,
-        default=Path("reports/glm52_shortgpt_bi_scores.md"),
+        default=Path("layer-level-structured-pruning/reports/glm52_shortgpt_bi_scores.md"),
     )
     ap.add_argument(
         "--plan",
         type=Path,
-        default=Path("reports/glm52_shortgpt_bi_scores.json"),
+        default=Path("layer-level-structured-pruning/reports/glm52_shortgpt_bi_scores.json"),
     )
     args = ap.parse_args()
 

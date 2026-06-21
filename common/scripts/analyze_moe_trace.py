@@ -8,9 +8,9 @@ Planned artifact from ``GLM52_TRACE_PLAN.md`` (Phase 1, Story 2):
 Usage::
 
     python common/scripts/analyze_moe_trace.py \
-        --traces "traces/glm52-*.jsonl" \
-        --out-md  reports/glm52_moe_trace_report.md \
-        --out-json reports/glm52_moe_trace_summary.json \
+        --traces "common/traces/glm52-*.jsonl" \
+        --out-md  common/reports/glm52_moe_trace_report.md \
+        --out-json common/reports/glm52_moe_trace_summary.json \
         --topn 8
 
 The analyzer is backend-agnostic: it consumes the canonical JSONL schema emitted
@@ -61,10 +61,10 @@ def main(argv: list[str] | None = None) -> int:
         "--traces",
         nargs="+",
         required=True,
-        help="One or more trace JSONL files or glob patterns (e.g. 'traces/*.jsonl').",
+        help="One or more trace JSONL files or glob patterns (e.g. 'common/traces/*.jsonl').",
     )
-    p.add_argument("--out-md", default="reports/glm52_moe_trace_report.md")
-    p.add_argument("--out-json", default="reports/glm52_moe_trace_summary.json")
+    p.add_argument("--out-md", default="common/reports/glm52_moe_trace_report.md")
+    p.add_argument("--out-json", default="common/reports/glm52_moe_trace_summary.json")
     p.add_argument("--topn", type=int, default=8, help="Top-N experts to report per task/language.")
     # Story 5 (re-scoped): MLA retrieval-pattern analysis over activation
     # summaries. Requires traces that were captured with the matching

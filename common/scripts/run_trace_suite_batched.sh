@@ -22,8 +22,8 @@
 #   MODEL        path to GGUF (default = known-good mixed baseline)
 #   TRACE_BIN    path to llama-trace-moe binary
 #   PHASE        prefill|generation|both (default both)
-#   TRACE_OUT    output dir (default traces/batch/<timestamp>)
-#   REPORT_MD    report path (default reports/glm52_batched_trace_report.md)
+#   TRACE_OUT    output dir (default common/traces/batch/<timestamp>)
+#   REPORT_MD    report path (default common/reports/glm52_batched_trace_report.md)
 #   SKIP_ANALYZE if 1, skip the analyzer step
 
 set -euo pipefail
@@ -32,7 +32,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 cd "$ROOT"
 
-SUITE="${SUITE:-prompts/tracing/glm52_trace_smoke_suite.expanded.jsonl}"
+SUITE="${SUITE:-common/prompts/glm52_trace_smoke_suite.expanded.jsonl}"
 # NOTE: use `${VAR-default}` (no colon before dash) for LANGS/DOMAINS so empty
 # string means "no filter, keep all" rather than falling back to defaults. With
 # bash `${VAR:-default}`, empty `LANGS=""` collapses to the default 7-language
@@ -49,9 +49,9 @@ MODEL="${MODEL:-/Volumes/Data NVME/GLM-5.2-GGUF/GLM-5.2-mixed-IQ2S-experts-IQ4NL
 TRACE_BIN="${TRACE_BIN:-$ROOT/vendor/llama.cpp/build-metal/bin/llama-trace-moe}"
 PHASE="${PHASE:-both}"
 TS="$(date +%Y%m%d-%H%M%S)"
-TRACE_OUT="${TRACE_OUT:-traces/batch/$TS}"
-REPORT_MD="${REPORT_MD:-reports/glm52_batched_trace_report.md}"
-REPORT_JSON="${REPORT_JSON:-reports/glm52_batched_trace_summary.json}"
+TRACE_OUT="${TRACE_OUT:-common/traces/batch/$TS}"
+REPORT_MD="${REPORT_MD:-common/reports/glm52_batched_trace_report.md}"
+REPORT_JSON="${REPORT_JSON:-common/reports/glm52_batched_trace_summary.json}"
 
 mkdir -p "$TRACE_OUT"
 batch_prompts="$TRACE_OUT/.batch_prompts.jsonl"

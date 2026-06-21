@@ -4,9 +4,9 @@
 # Planned artifact from GLM52_TRACE_PLAN.md (Phase 1, Story 7):
 #   common/scripts/run_trace_task_suite.sh
 #
-# Loops the expanded smoke suite (prompts/tracing/glm52_trace_smoke_suite.expanded.jsonl),
+# Loops the expanded smoke suite (common/prompts/glm52_trace_smoke_suite.expanded.jsonl),
 # invokes run_glm52_moe_trace.sh per prompt, then runs the analyzer to produce
-# reports/glm52_moe_trace_report.md + summary JSON.
+# common/reports/glm52_moe_trace_report.md + summary JSON.
 #
 # Defaults to disabled thinking + small max_new_tokens for the smoke suite
 # (per the trace plan's thinking-budget policy: smoke is for routing/activation
@@ -14,8 +14,8 @@
 #
 # Env overrides (in addition to those honored by run_glm52_moe_trace.sh):
 #   SUITE        path to expanded smoke-suite JSONL
-#   TRACE_DIR    output dir for per-prompt traces (default traces/smoke/<ts>)
-#   REPORT_DIR   output dir for report (default reports)
+#   TRACE_DIR    output dir for per-prompt traces (default common/traces/smoke/<ts>)
+#   REPORT_DIR   output dir for report (default common/reports)
 #   LIMIT        max number of suite records to run (0 = all)
 #   LANGS        space-separated subset, e.g. "en zh" (default = all 7)
 #   DOMAINS      space-separated subset, e.g. "coding math" (default = all)
@@ -26,10 +26,10 @@ set -euo pipefail
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo"
 
-SUITE="${SUITE:-prompts/tracing/glm52_trace_smoke_suite.expanded.jsonl}"
+SUITE="${SUITE:-common/prompts/glm52_trace_smoke_suite.expanded.jsonl}"
 TS="$(date +%Y%m%d-%H%M%S)"
-TRACE_DIR="${TRACE_DIR:-traces/smoke/$TS}"
-REPORT_DIR="${REPORT_DIR:-reports}"
+TRACE_DIR="${TRACE_DIR:-common/traces/smoke/$TS}"
+REPORT_DIR="${REPORT_DIR:-common/reports}"
 LIMIT="${LIMIT:-0}"
 LANGS="${LANGS:-en it zh es fr de pt}"
 DOMAINS="${DOMAINS:-coding math physics engineering computer_science chemistry cybersecurity}"

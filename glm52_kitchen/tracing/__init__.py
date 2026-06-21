@@ -12,8 +12,10 @@ Public API:
 * :mod:`synth` – deterministic synthetic trace generator (tests + demo reports)
 
 The C++ backend that captures real ``ffn_moe_topk`` / ``ffn_moe_weights`` tensors
-lives outside this package at ``~/projects/llama.cpp/examples/trace-moe/`` and
-emits the same JSONL schema this framework consumes.
+lives in the vendored patched llama.cpp submodule at
+``vendor/llama.cpp/examples/trace-moe/`` and is built as
+``vendor/llama.cpp/build-metal/bin/llama-trace-moe``. It emits the same JSONL
+schema this framework consumes.
 """
 
 from .schema import (

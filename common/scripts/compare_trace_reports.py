@@ -8,10 +8,10 @@ Planned artifact from ``GLM52_TRACE_PLAN.md`` (Phase 1, Story 8):
 Usage::
 
     python common/scripts/compare_trace_reports.py \
-        --label baseline  --summary reports/glm52_moe_trace_summary.json \
-        --label reap37    --summary reports/reap37_moe_trace_summary.json \
-        --out-md  reports/glm52_baseline_vs_reap37.md \
-        --out-json reports/glm52_baseline_vs_reap37.json
+        --label baseline  --summary common/reports/glm52_moe_trace_summary.json \
+        --label reap37    --summary common/reports/reap37_moe_trace_summary.json \
+        --out-md  common/reports/glm52_baseline_vs_reap37.md \
+        --out-json common/reports/glm52_baseline_vs_reap37.json
 
 Carries the hardcoded caveat that REAP37 MLX indexer-compat traces are INVALID
 for quality comparison until proper IndexShare support lands.
@@ -38,8 +38,8 @@ def main(argv: list[str] | None = None) -> int:
         required=True,
         help="Path to a summary JSON from analyze_moe_trace.py. Repeat once per --label.",
     )
-    p.add_argument("--out-md", default="reports/glm52_trace_comparison.md")
-    p.add_argument("--out-json", default="reports/glm52_trace_comparison.json")
+    p.add_argument("--out-md", default="common/reports/glm52_trace_comparison.md")
+    p.add_argument("--out-json", default="common/reports/glm52_trace_comparison.json")
     p.add_argument("--topn", type=int, default=8)
     args = p.parse_args(argv)
 

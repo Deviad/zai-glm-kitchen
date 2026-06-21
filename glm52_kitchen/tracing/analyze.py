@@ -3,7 +3,7 @@
 Consumes one or more trace JSONL files (plus their ``.meta.json`` sidecars when
 present) and produces:
 
-* a markdown report (``reports/glm52_moe_trace_report.md``) with top experts by
+* a markdown report (``common/reports/glm52_moe_trace_report.md``) with top experts by
   task / language / layer, overlap scores, router entropy, and prefill-vs-gen
   comparison;
 * a machine-readable summary JSON sidecar.

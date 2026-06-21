@@ -4,7 +4,7 @@ Emits canonical :data:`~glm52_kitchen.tracing.schema.EVENT_MOE_ROUTING` records 
 smoke-suite prompt record, deterministic by seed.  Used to:
 
 * unit-test the analyzer + writer without loading the 232GB GLM-5.2 model;
-* produce a sample ``reports/glm52_moe_trace_report.md`` so the report pipeline
+* produce a sample ``common/reports/glm52_moe_trace_report.md`` so the report pipeline
   is demonstrably end-to-end before a live run.
 
 The routing distribution is mildly task- and language-biased (coding prefers a

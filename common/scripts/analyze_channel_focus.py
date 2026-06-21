@@ -411,7 +411,7 @@ def main() -> int:
         "--traces",
         nargs="+",
         required=True,
-        help="Trace file paths or globs (e.g. 'traces/batch/activation_*/ *.jsonl')",
+        help="Trace file paths or globs (e.g. 'common/traces/batch/activation_*/*.jsonl')",
     )
     ap.add_argument(
         "--channel",

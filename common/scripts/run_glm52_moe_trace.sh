@@ -4,9 +4,9 @@
 # Planned artifact from GLM52_TRACE_PLAN.md (Phase 1, Story 1):
 #   common/scripts/run_glm52_moe_trace.sh
 #
-# This wraps the C++ trace-moe backend at:
-#   /Users/spotted/projects/llama.cpp/build-metal/bin/llama-trace-moe
-#   (legacy path; default now resolves to $ROOT/vendor/llama.cpp submodule)
+# This wraps the C++ trace-moe backend built from the vendored patched
+# llama.cpp submodule at:
+#   $ROOT/vendor/llama.cpp/build-metal/bin/llama-trace-moe
 #
 # Defaults to the known-good mixed GGUF baseline. Honors env overrides:
 #   MODEL       /path/to/model.gguf

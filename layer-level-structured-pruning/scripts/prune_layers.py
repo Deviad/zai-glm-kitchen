@@ -2,7 +2,7 @@
 """Apply a ShortGPT layer-drop plan to a multi-shard GLM-5.2 GGUF model.
 
 Reads a BI plan (JSON with layers_to_drop + renumber_map + block_count_new)
-produced by ``scripts/tracing/analyze_bi_scores.py`` and rewrites all 9
+produced by ``layer-level-structured-pruning/scripts/analyze_bi_scores.py`` and rewrites all 9
 shards of the source model into ``--output-dir``. Each shard is processed
 independently (mirrors Phase 7b semantics so the existing exclude/rename KV
 code path is reused without surprises):
@@ -21,15 +21,15 @@ code path is reused without surprises):
 
 Usage::
 
-    python3 scripts/prune_layers.py \\
+    python3 layer-level-structured-pruning/scripts/prune_layers.py \\
         --input-dir  /Volumes/Data NVME/GLM-5.2-GGUF/GLM-5.2-shortgpt-IQ2S-experts-IQ4NL-rest \\
         --output-dir /Volumes/Data NVME/GLM-5.2-GGUF/GLM-5.2-shortgpt-pruned-IQ2S-experts-IQ4NL-rest \\
-        --plan       reports/glm52_shortgpt_bi_scores.json
+        --plan       layer-level-structured-pruning/reports/glm52_shortgpt_bi_scores.json
 
     # Dry-run: validate inputs, scan shards, report changes without writing:
-    python3 scripts/prune_layers.py \\
+    python3 layer-level-structured-pruning/scripts/prune_layers.py \\
         --input-dir  /Volumes/Data NVME/GLM-5.2-GGUF/GLM-5.2-shortgpt-IQ2S-experts-IQ4NL-rest \\
-        --plan       reports/glm52_shortgpt_bi_scores.json \\
+        --plan       layer-level-structured-pruning/reports/glm52_shortgpt_bi_scores.json \\
         --dry-run
 
 The output-dir basename is preserved across shards so the loader still

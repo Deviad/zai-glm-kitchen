@@ -9,15 +9,15 @@ to what a live run would produce structurally (only the distribution is fake).
 Usage::
 
     python common/scripts/make_synth_trace.py \
-        --suite prompts/tracing/glm52_trace_smoke_suite.expanded.jsonl \
-        --out-dir traces/synth \
+        --suite common/prompts/glm52_trace_smoke_suite.expanded.jsonl \
+        --out-dir common/traces/synth \
         --limit 20
 
     # then analyze:
     python common/scripts/analyze_moe_trace.py \
-        --traces "traces/synth/*.jsonl" \
-        --out-md reports/glm52_moe_trace_report.md \
-        --out-json reports/glm52_moe_trace_summary.json
+        --traces "common/traces/synth/*.jsonl" \
+        --out-md common/reports/glm52_moe_trace_report.md \
+        --out-json common/reports/glm52_moe_trace_summary.json
 """
 from __future__ import annotations
 
@@ -32,10 +32,10 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument(
         "--suite",
-        default="prompts/tracing/glm52_trace_smoke_suite.expanded.jsonl",
+        default="common/prompts/glm52_trace_smoke_suite.expanded.jsonl",
         help="Expanded smoke-suite JSONL (one prompt record per line).",
     )
-    p.add_argument("--out-dir", default="traces/synth", help="Directory to write trace JSONL files.")
+    p.add_argument("--out-dir", default="common/traces/synth", help="Directory to write trace JSONL files.")
     p.add_argument("--limit", type=int, default=0, help="Max records to emit (0 = all).")
     p.add_argument("--n-prefill", type=int, default=24)
     p.add_argument("--n-gen", type=int, default=16)
