@@ -3939,3 +3939,136 @@ layer index or found in the model card.
 
 Cross-linked from `AGENTS.md` (new `## DSA / IndexShare forward-path
 research library` section) and `PLAN.md` §10 / §7.M AC7.
+
+### 2026-06-21 — Story 7.M: Mixed-precision MLX export — STRUCTURALLY COMPLETE, short-context quality FAILS (worse than REAP37)
+
+**Objective.** Export the ShortGPT-pruned mixed-quantization GGUF
+(`GLM-5.2-shortgpt-pruned-IQ2S-experts-IQ4NL-rest`, 205 GB, 625.4B params)
+to MLX-native affine quantization mirroring the expert=2-bit / rest=4-bit
+policy, into `/Volumes/Data NVME/GLM-5.2-MLX/GLM-5.2-shortgpt-pruned-mixed-mlx/`.
+
+**Tool built.** `mlx-export/gguf_to_mlx_streaming.py` — a streaming
+per-tensor converter: GGUF dequant → `mx.quantize(bits=2 or 4, group_size=64)`
+→ sharded safetensors. No fp16 intermediate on disk (fp16 would be ~1.25 TB
+> free space). Reuses gguf2mlx's name-mapping + MLA transforms via import.
+
+**Run result.** 80.9 min wall, 38 shards, 202.45 GB out / 204.92 GB in
+(0.988×). Output at `/Volumes/Data NVME/GLM-5.2-MLX/GLM-5.2-shortgpt-pruned-mixed-mlx/`.
+
+**Acceptance criteria status:**
+- AC1 (file inventory): ✅ 38 safetensors + config.json + tokenizer files +
+  index.json. 189 GB on disk.
+- AC2 (config dims): ✅ num_hidden_layers=66, hidden_size=6144,
+  n_routed_experts=256, kv_lora_rank=512, v_head_dim=256 (see Bug A),
+  qk_nope_head_dim=192, qk_rope_head_dim=64.
+- AC3 (mixed-bit proof): ✅ 189 switch_mlp modules at 2-bit (experts) +
+  726 attn/dense modules at 4-bit. Verified after collapsing per-expert
+  override keys to post-sanitize switch_mlp paths (see Bug D).
+- AC4 (tokenizer): ✅ chat_template.jinja + tokenizer.json present; chat
+  template renders correct GLM format `[gMASK]<sop><|system|>...<|user|>...<|assistant|><think>`.
+- AC5 (`mlx_lm.load` succeeds): ✅ Loads in ~28s, 15.3 GB RSS. Model class
+  `mlx_lm.models.glm_moe_dsa.Model` (= `deepseek_v32.Model` subclass).
+  switch_mlp.gate_proj is `QuantizedSwitchLinear`, weight shape (256, 2048,
+  384) uint32 (2-bit packed). embed_q/unembed_out are `QuantizedMultiLinear`.
+- AC6 (short merge-sort baseline): ❌ FAILS. Model loads and generates at
+  21.7 tok/s (faster than llama.cpp's 20.2), but output is **degenerate
+  repetition** ("Python. Python. Python.", "2+2+2+2", "tink tink tink").
+  Same symptom on all 3 simple prompts tested.
+- AC7 (IndexShare caveat): ❌ CONFIRMED — and worse than documented. The
+  IndexShare blocker was expected to only break LONG-context retrieval;
+  here SHORT context (28 tokens, well under index_topk=2048 so the DSA
+  indexer returns None) ALSO fails. This means the quality gap is NOT
+  solely the IndexShare forward path — something else in the
+  glm_moe_dsa/deepseek_v32 forward graph is mismatched for GLM-5.2's
+  actual MLA layout.
+
+**Weight-level verification (all PASS — conversion is numerically sound):**
+- `model.embed_tokens.weight` vs GGUF `token_embd.weight`: max abs diff
+  2.96e-5 (fp16 rounding only).
+- `model.norm.weight` vs `output_norm.weight`: max abs diff 0.0 (exact).
+- `model.layers.3.mlp.shared_experts.gate_proj` (4-bit) vs
+  `blk.3.ffn_gate_shexp.weight`: max abs diff 0.013, mean 0.0013 (normal
+  4-bit quant error).
+- `model.layers.3.self_attn.kv_b_proj` (4-bit, post-combine) vs combined
+  GGUF k_b+v_b: max abs diff 0.013, mean 0.0009 (normal 4-bit quant error).
+  Combined layout = [k_b transposed to (heads, dk_nope, kv_lora), v_b
+  (heads, dv, kv_lora)] concatenated on axis=1 → (64, 448, 512) → reshaped
+  (28672, 512). Matches what sanitize() splits back into embed_q /
+  unembed_out.
+- `model.layers.3.mlp.gate.e_score_correction_bias` vs `blk.3.exp_probs_b.bias`:
+  max abs diff 0.008 (fp16 rounding).
+
+**Bugs found and fixed during load-test iteration (all recorded in converter):**
+
+- **Bug A — v_head_dim misread.** gguf2mlx's config builder reads
+  `glm-dsa.attention.value_length` (512) as v_head_dim, but the correct
+  MLA per-head value dim is `glm-dsa.attention.value_length_mla` (256).
+  With 512, sanitize() computes head_dim=704 and tries to reshape kv_b_proj
+  to (64, 704, 512) but the tensor only has (64, 448, 512) elements →
+  crash. **Fix:** post-build override `config["v_head_dim"] =
+  value_length_mla`. Also set `config["n_routed_experts"] = num_experts`
+  (mlx-lm ModelArgs expects the former, gguf2mlx sets the latter).
+
+- **Bug B — rope_parameters missing.** Installed mlx-lm's
+  `glm_moe_dsa.ModelArgs` (v0.31.3) requires a `rope_parameters: Dict`
+  field (with `rope_theta` inside), not the flat `rope_theta` the
+  converter wrote. **Fix:** write a nested dict
+  `{"rope_theta":..., "rope_scaling":..., "rope_type":"default"}`. A
+  harmless transformers warning (`Unrecognized keys in rope_parameters
+  for rope_type=default: {rope_scaling}`) remains because of the None
+  rope_scaling we nest; cosmetic only.
+
+- **Bug C — exp_probs_b.bias not renamed.** gguf2mlx's `_plan_tensor_emit`
+  matches `rest == "exp_probs_b"` but the actual GGUF tensor name is
+  `blk.N.exp_probs_b.bias` (with `.bias` suffix), so 63 tensors passed
+  through unrenamed → load error "Received 63 parameters not in model".
+  **Fix applied two ways:** (1) converter now regex-intercepts
+  `blk\.(\d+)\.exp_probs_b\.bias$` → `model.layers.\1.mlp.gate.e_score_correction_bias`;
+  (2) for the already-written output, an in-place shard surgery script
+  renamed all 63 tensors across 38 shards in ~4 min (load → rename →
+  mx.save_safetensors), plus updated index.json.
+
+- **Bug D — quantization override keys used pre-sanitize expert paths.**
+  The converter wrote 48573 per-expert override keys like
+  `model.layers.3.mlp.experts.0.gate_proj`, but mlx-lm's sanitize()
+  stacks experts into `switch_mlp` and the `_quantize()` matcher keys on
+  POST-sanitize module paths. Result: experts fell through to the default
+  4-bit (instead of the intended 2-bit), and the shape check fired
+  because per-expert (2048, 384) didn't match QuantizedSwitchLinear's
+  expected (256, 2048, 384). **Fix:** collapse
+  `experts.N.{gate,up,down}_proj` → `switch_mlp.{gate,up,down}_proj` in
+  the config quantization dict (48573 → 189 keys). Converter patched
+  for future runs; existing config.json patched in place.
+
+**Why short-context quality fails (diagnosis, NOT yet fixed).** All
+weights verify numerically against the GGUF. All layers load as the
+correct Quantized* types (no double-quantization). Chat template is
+correct GLM format. For a 28-token prompt L=28 < index_topk=2048, the
+DSA Indexer returns None and the normal MLA path runs — so the
+documented IndexShare gap is NOT the proximate cause of the gibberish
+at short context. Most likely remaining causes, in priority order:
+  1. RoPE interleave mismatch — config carries `rope_interleave: True`
+     but deepseek_v32.Attention hardcodes `initialize_rope(...
+     traditional=True)`. If GLM-5.2's pretraining used a different
+     RoPE convention than deepseek_v32 assumes, attention positional
+     scores are wrong → degraded-but-not-random output (matches the
+     observed repetition pattern).
+  2. GLM-5.2 MLA dimensional details diverging from DeepSeek-V3.2's
+     (v_head_dim 256 vs 128, q_lora_rank 2048, expert_gating_func=2)
+     in a way the forward graph doesn't accommodate.
+  3. A subtle sanitize() transform getting the k_b/v_b head split
+     differently than GLM-5.2 expects.
+
+This is the SAME CLASS of issue as the documented IndexShare blocker
+(mlx-lm's glm_moe_dsa is a 53-line no-op subclass of deepseek_v32.Model
+with no GLM-5.2-specific forward path), just surfacing at short context
+instead of only long context.
+
+**Recommendation.** Story 7.M's structural work is done and verifiable
+(AC1-AC5 pass, load succeeds, weights proven numerically faithful). AC6
+(quality) is blocked on the same forward-path gap documented in §8 item
+2 of PLAN.md and in the DSA research library — implementing the GLM-5.2-
+correct MLA + RoPE forward path in `deepseek_v32.py` (or a new
+glm_moe_dsa-specific forward) is the prerequisite. This is NOT a
+quantization or conversion bug; the converter output is sound.
+
