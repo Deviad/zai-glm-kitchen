@@ -10,7 +10,7 @@ After a fresh clone, init submodules once:
 
 ```sh
 git clone <kitchen-url>
-cd GLM-5.2-kitchen
+cd zai-glm-kitchen
 git submodule update --init --recursive      # ~5 min for the llama.cpp clone
 ```
 
@@ -88,7 +88,7 @@ fallback path.
 
 ```sh
 git clone <kitchen-url>
-cd GLM-5.2-kitchen
+cd zai-glm-kitchen
 git submodule update --init --recursive      # ~5 min for the llama.cpp clone
 
 # Point at large on-disk GLM-5.2 assets (NOT in any repo):

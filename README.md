@@ -28,7 +28,7 @@ git submodule update --init --recursive      # ~5 min for the llama.cpp clone
 ## Layout
 
 ```
-GLM-5.2-kitchen/
+zai-glm-kitchen/
 ├── glm52_kitchen/                     # Python package (pip install -e .)
 │   └── tracing/                       # MoE routing / activation / retrieval tracing
 ├── tests/                             # 4 tracing-related test modules

@@ -194,9 +194,9 @@ This appears to be a chat-template / llama.cpp behavior, not clear evidence of q
 Quantization reproduction scripts live outside this repo in:
 
 ```text
-GLM-5.2-kitchen/mixed-precision-quantization/scripts/build_llamacpp.sh
-GLM-5.2-kitchen/mixed-precision-quantization/scripts/quant_glm52_mixed.sh
-GLM-5.2-kitchen/mixed-precision-quantization/scripts/verify_glm52_mixed.py
+zai-glm-kitchen/mixed-precision-quantization/scripts/build_llamacpp.sh
+zai-glm-kitchen/mixed-precision-quantization/scripts/quant_glm52_mixed.sh
+zai-glm-kitchen/mixed-precision-quantization/scripts/verify_glm52_mixed.py
 ```
 
 Do not use the older Homebrew `llama-quantize` for GLM-5.2 work.

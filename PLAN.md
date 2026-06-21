@@ -4,7 +4,7 @@
 **Mode:** Pure translator — GGUF → HF-named safetensors + config + tokenizer. Does not implement forward passes.
 
 > Originally part of the [`gguf2mlx`](https://github.com/barrontang/gguf2mlx)
-> converter repo. Migrated here as part of `GLM-5.2-kitchen/` so the kitchen
+> converter repo. Migrated here as part of `zai-glm-kitchen/` so the kitchen
 > is self-contained + github-extractable. The implementation of the
 > converter itself (`gguf2mlx.convert()`, `detect_architecture()`,
 > `extract_and_convert_weights()`, etc.) lives at
