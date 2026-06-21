@@ -33,5 +33,3 @@ common/traces/synth/
 # tracer run logs (llama-cli verbose output captured to *.run.log)
 *.run.log
 
-# built artifacts in vendored submodules (after sub-step: add submodules)
-vendor/

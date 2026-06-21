@@ -6,6 +6,7 @@
 #
 # This wraps the C++ trace-moe backend at:
 #   /Users/spotted/projects/llama.cpp/build-metal/bin/llama-trace-moe
+#   (legacy path; default now resolves to $ROOT/vendor/llama.cpp submodule)
 #
 # Defaults to the known-good mixed GGUF baseline. Honors env overrides:
 #   MODEL       /path/to/model.gguf
@@ -28,9 +29,16 @@
 # Exit codes: 0 success, 2 missing deps, 3 trace-moe failed, 4 exists already.
 set -euo pipefail
 
+# Resolve kitchen root (this script lives in common/scripts/) so default
+# paths can refer to the vendored llama.cpp submodule at vendor/.
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$HERE/../.." && pwd)"
+
 # ---- defaults ---------------------------------------------------------------
 MODEL="${MODEL:-${MODEL_DIR:-/Volumes/Data NVME/GLM-5.2-GGUF}/GLM-5.2-mixed-IQ2S-experts-IQ4NL-rest/GLM-5.2-mixed-00001-of-00009.gguf}"
-CLI="${CLI:-/Users/spotted/projects/llama.cpp/build-metal/bin/llama-trace-moe}"
+# Default trace-moe binary lives in the patched llama.cpp built from the
+# vendor/llama.cpp submodule. Override CLI if your build is elsewhere.
+CLI="${CLI:-$ROOT/vendor/llama.cpp/build-metal/bin/llama-trace-moe}"
 TS="$(date +%Y%m%d-%H%M%S)"
 TASK_LABEL="${TASK_LABEL:-coding}"
 LANGUAGE="${LANGUAGE:-en}"
@@ -46,13 +54,11 @@ TRACE_LAYERS="${TRACE_LAYERS:-}"
 TRACE_MAX_TOKENS="${TRACE_MAX_TOKENS:-}"
 BACKPRESSURE="${BACKPRESSURE:-sample}"
 
-repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-
 # ---- preflight --------------------------------------------------------------
 if [ ! -x "$CLI" ]; then
   echo "ERROR: trace-moe binary not found/not executable: $CLI" >&2
-  echo "  build it from /Users/spotted/projects/llama.cpp:" >&2
-  echo "    cmake --build build-metal --target llama-trace-moe" >&2
+  echo "  build it from the vendored llama.cpp submodule at $ROOT/vendor/llama.cpp:" >&2
+  echo "    bash mixed-precision-quantization/scripts/build_llamacpp.sh" >&2
   exit 2
 fi
 if [ ! -f "$MODEL" ]; then

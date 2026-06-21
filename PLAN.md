@@ -8,7 +8,9 @@
 > is self-contained + github-extractable. The implementation of the
 > converter itself (`gguf2mlx.convert()`, `detect_architecture()`,
 > `extract_and_convert_weights()`, etc.) lives at
-> https://github.com/barrontang/gguf2mlx under `src/gguf2mlx/gguf2mlx.py`.
+> https://github.com/barrontang/gguf2mlx under `src/gguf2mlx/gguf2mlx.py`; tracked
+> as a git submodule at `vendor/gguf2mlx` on branch
+> `feature/update_for_glm5.2_cooking` of `Deviad/gguf2mlx`.
 > This plan tracks the GLM-5.2-specific architecture-mapping work done in
 > the converter; for reproducibility of trace/prune/quant experiments
 > alongside it, see the matching folders in the kitchen:

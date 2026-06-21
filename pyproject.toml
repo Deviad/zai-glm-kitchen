@@ -22,7 +22,17 @@ classifiers = [
 dependencies = [
     "gguf>=0.18.0",
     "numpy",
+    "gguf2mlx",
 ]
+
+[tool.uv.sources]
+# gguf2mlx converter vendored as a git submodule pinning the
+# feature/update_for_glm5.2_cooking branch of Deviad/gguf2mlx. Its
+# `convert()` entry point is the end-to-end GGUF -> MLX translator used
+# for the Phase 8 MLX conversion step.
+# https://docs.astral.sh/uv/concepts/projects/dependencies/#path-dependencies
+gguf2mlx = { path = "vendor/gguf2mlx", editable = true }
+
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov", "ruff", "mypy"]
@@ -30,6 +40,12 @@ dev = ["pytest", "pytest-cov", "ruff", "mypy"]
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+# Keep pytest scoped to the kitchen's own `tests/` directory — otherwise it
+# would also descend into vendor/ submodule checkouts (gguf2mlx, llama.cpp)
+# and error out collecting their optional-dependency tests.
+testpaths = ["tests"]
 
 [tool.setuptools.packages.find]
 where = ["."]

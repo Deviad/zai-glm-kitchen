@@ -6,7 +6,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MODEL="${MODEL:-/Volumes/Data NVME/GLM-5.2-GGUF/GLM-5.2-mixed-IQ2S-experts-IQ4NL-rest/GLM-5.2-mixed-00001-of-00009.gguf}"
-CLI="${CLI:-$HOME/projects/llama.cpp/build-metal/bin/llama-cli}"
+CLI="${CLI:-$ROOT/vendor/llama.cpp/build-metal/bin/llama-cli}"
 OUT="${OUT:-$ROOT/glm52_baseline_merge_sort_output.txt}"
 PROMPT="${PROMPT:-Write down a merge sort algo non recursive in Python. Do not explain your reasoning. Output the Python code first, then one short sentence.}"
 

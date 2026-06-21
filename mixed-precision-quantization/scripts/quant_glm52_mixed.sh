@@ -7,7 +7,12 @@
 # Output: new sharded GGUF (~9 shards, est ~240-260 GB).
 set -euo pipefail
 
-LLAMA_SRC="${LLAMA_SRC:-$HOME/projects/llama.cpp}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$HERE/../.." && pwd)"
+
+# Default to the vendored llama.cpp submodule. Override LLAMA_SRC only if you
+# want to use a separate build (in which case run build_llamacpp.sh against it).
+LLAMA_SRC="${LLAMA_SRC:-$ROOT/vendor/llama.cpp}"
 LQ="$LLAMA_SRC/build-metal/bin/llama-quantize"
 
 IN_DIR="/Volumes/Data NVME/GLM-5.2-GGUF/UD-IQ4_NL"

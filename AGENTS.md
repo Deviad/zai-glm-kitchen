@@ -72,18 +72,31 @@ non-expert tensors:               no IQ2
 
 ## Patched llama.cpp
 
-Use the local patched llama.cpp build, not Homebrew `llama.cpp` v9200:
+Tracked as a git submodule at `vendor/llama.cpp` on branch
+`feature/patch_used_to_create_mixed_quantization_of_glm5.2` of
+`Deviad/llama.cpp`. Fork descends from `ggml-org/llama.cpp`.
+
+`build_llamacpp.sh` builds directly into the submodule by default (it detects
+the submodule case via `.git` being a file → skips git fetch/checkout/reset
+so the pinned feature-branch state is preserved). `build-metal/` is covered
+by llama.cpp's own `.gitignore` (`/build*`) so the submodule status stays
+clean after a build.
+
+Use the patched build, not Homebrew `llama.cpp` v9200:
 
 ```text
-$LLAMA_CPP_DIR/build-metal/bin/llama-cli
-$LLAMA_CPP_DIR/build-metal/bin/llama-quantize
+$ROOT/vendor/llama.cpp/build-metal/bin/llama-cli
+$ROOT/vendor/llama.cpp/build-metal/bin/llama-quantize
+$ROOT/vendor/llama.cpp/build-metal/bin/llama-trace-moe
 ```
-    (env: LLAMA_CPP_DIR; see LOCAL_SETUP.md)
+    (`$ROOT` = kitchen checkout root, resolved by each script. Override via
+    `LLAMA_SRC` for an alternate build location; `CLI`/`TRACE_BIN` to point
+    at a specific binary. See LOCAL_SETUP.md.)
 
 Local patch applied in:
 
 ```text
-$LLAMA_CPP_DIR/src/llama-quant.cpp
+$ROOT/vendor/llama.cpp/src/llama-quant.cpp
 ```
 
 Patch reason: llama.cpp issue #24379, MTP quantization bug. The quantizer must use `n_layer_all`, not `n_layer()`, for FFN/MoE tensor counters so `blk.78` is valid.

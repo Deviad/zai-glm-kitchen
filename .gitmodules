@@ -1,0 +1,8 @@
+[submodule "vendor/gguf2mlx"]
+	path = vendor/gguf2mlx
+	url = git@github.com:Deviad/gguf2mlx.git
+	branch = feature/update_for_glm5.2_cooking
+[submodule "vendor/llama.cpp"]
+	path = vendor/llama.cpp
+	url = git@github.com:Deviad/llama.cpp.git
+	branch = feature/patch_used_to_create_mixed_quantization_of_glm5.2
