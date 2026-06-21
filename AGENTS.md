@@ -236,6 +236,29 @@ Current REAP37 MLX status:
 - Do not use the compat folder as a trusted quality baseline. Treat it as a speed/loading experiment only.
 - Proper next step is implementing IndexShare in `mlx_lm.models.glm_moe_dsa` or using a proper REAP GGUF if one becomes available.
 
+## DSA / IndexShare forward-path research library
+
+If a task mentions implementing the DSA lightning indexer forward pass, the F/S
+(full/shared) IndexShare layer pattern, CSA, or otherwise making GLM-5.2
+actually run DSA correctly (vs. the current native behavior where stock
+`mlx_lm.models.glm_moe_dsa` subclasses `deepseek_v32.Model` with no IndexShare
+forward path, and stock `llama.cpp` `glm-dsa.cpp:152` aliases to
+`deepseek32::graph` with zero indexer references) — read the PDFs in:
+
+```text
+    docs/research/papers/   (arXiv PDFs, fetched 2026-06-21, ~10 MB total)
+    docs/research/README.md (per-paper abstract quotes + "what to extract")
+```
+
+The six papers in that folder are the mathematical ground truth for the gap
+above (DeepSeek-V3.2 DSA origin, the IndexCache/IndexShare F/S pattern paper,
+GLM-5 tech report, StreamIndex V4 CSA, FlashMemory V4, MISA third-party DSA
+repro). They are also cross-referenced in `PLAN.md` §10 and are the basis for
+AC7 in PLAN.md §7.M (the honest IndexShare load-time caveat of the mixed-
+precision MLX export). `GLM52_TRACE_PLAN.md`'s interpretability work and this
+forward-path implementation share the same blockers — both depend on the same
+forward-path work, so consult this library first.
+
 ## GLM-5.2 tracing / interpretability plan
 
 If a task mentions tracing, debugging activations, expert routing, neurons, interpretability, scientific-document understanding, or coding-vs-science activation comparison, read:
@@ -244,19 +267,19 @@ If a task mentions tracing, debugging activations, expert routing, neurons, inte
 GLM52_TRACE_PLAN.md
 ```
 
-Initial tracing scope should be MoE expert routing first, not full activation dumps. Preserve the known-good GGUF baseline and write trace artifacts under predictable `traces/` and `reports/` paths.
+Initial tracing scope should be MoE expert routing first, not full activation dumps. Preserve the known-good GGUF baseline and write trace artifacts under predictable `common/traces/` and `common/reports/` paths.
 
-**Phase 1 (MoE expert routing tracer) is IMPLEMENTED.** See `GLM52_TRACE_PLAN.md` (top section) and `GLM52_SESSION_MEMORY.md` ("Phase 1 tracer implementation"). The framework lives in `src/gguf2mlx/tracing/` (schema, async writer, analyzer, comparator, synth), with C++ backend `llama-trace-moe` built in the patched llama.cpp tree at `~/projects/llama.cpp/build-metal/bin/llama-trace-moe`. Run scripts: `scripts/tracing/run_glm52_moe_trace.sh` (single prompt), `scripts/tracing/run_trace_task_suite.sh` (per-prompt-reload wrapper), and `scripts/tracing/run_trace_suite_batched.sh` (load model once, trace N prompts). Analyze: `scripts/tracing/analyze_moe_trace.py` / `compare_trace_reports.py`. **Phase 2b (multilingual routing study, 7 langs × 7 domains = 49 prompts) is DONE** — see `reports/glm52_multilingual_routing_report.md` and the Phase 2b section in `GLM52_TRACE_PLAN.md`. Phases 2b-scaled (larger grids), 3/4/5 remain planned.
+**Phase 1 (MoE expert routing tracer) is IMPLEMENTED.** See `GLM52_TRACE_PLAN.md` (top section) and `GLM52_SESSION_MEMORY.md` ("Phase 1 tracer implementation"). The framework lives in `glm52_kitchen/tracing/` (schema, async writer, analyzer, comparator, synth), with C++ backend source in `vendor/llama.cpp/examples/trace-moe/` and binary at `$ROOT/vendor/llama.cpp/build-metal/bin/llama-trace-moe`. Run scripts: `common/scripts/run_glm52_moe_trace.sh` (single prompt), `common/scripts/run_trace_task_suite.sh` (per-prompt-reload wrapper), and `common/scripts/run_trace_suite_batched.sh` (load model once, trace N prompts). Analyze: `common/scripts/analyze_moe_trace.py` / `compare_trace_reports.py`. **Phase 2b (multilingual routing study, 7 langs × 7 domains = 49 prompts) is DONE** — see `common/reports/glm52_multilingual_routing_report.md` and the Phase 2b section in `GLM52_TRACE_PLAN.md`. Phases 2b-scaled, 3/4/5 remain planned.
 
 ### GLM-5.2 trace smoke suite
 
 Trace prompt suite lives in:
 
 ```text
-prompts/tracing/glm52_trace_smoke_suite.json
-prompts/tracing/glm52_trace_smoke_suite.expanded.jsonl
-prompts/tracing/README.md
-scripts/tracing/expand_smoke_suite.py
+common/prompts/glm52_trace_smoke_suite.json
+common/prompts/glm52_trace_smoke_suite.expanded.jsonl
+common/prompts/README.md
+common/scripts/expand_smoke_suite.py
 ```
 
 It contains 23 base tests translated across English, Italian, Chinese, Spanish, French, German, and Portuguese, for 161 expanded prompt records. Domains: coding, physics, math, engineering, computer science, chemistry, cybersecurity.

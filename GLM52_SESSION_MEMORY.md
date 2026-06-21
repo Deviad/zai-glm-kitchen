@@ -34,8 +34,8 @@ First shard to load:
 PLAN.md
 README.md
 pyproject.toml
-src/gguf2mlx/gguf2mlx.py
-src/gguf2mlx/data/glm_dsa_chat_template.jinja
+vendor/gguf2mlx/src/gguf2mlx/gguf2mlx.py
+vendor/gguf2mlx/src/gguf2mlx/data/glm_dsa_chat_template.jinja
 tests/test_glm_dsa.py
 tests/test_glm_dsa_e2e.py
 GLM52_SESSION_MEMORY.md
@@ -51,7 +51,7 @@ HF type:     glm_moe_dsa
 HF class:    GlmMoeDsaForCausalLM
 ```
 
-Key additions in `src/gguf2mlx/gguf2mlx.py`:
+Key additions in `vendor/gguf2mlx/src/gguf2mlx/gguf2mlx.py`:
 
 - Added `"glm-dsa": "glm_moe_dsa"` to `ARCH_MAP`.
 - Added `_build_glm_dsa_config()` for GLM-5.2 config generation.
@@ -273,13 +273,13 @@ Homebrew `llama.cpp` was installed as v9200, but it predates GLM-5.2 / `glm-dsa`
 Built fresh llama.cpp from master at:
 
 ```text
-~/projects/llama.cpp
+vendor/llama.cpp
 ```
 
 Build directory:
 
 ```text
-~/projects/llama.cpp/build-metal
+vendor/llama.cpp/build-metal
 ```
 
 Built tools:
@@ -295,7 +295,7 @@ Patched local llama.cpp for known MTP quantization bug, matching llama.cpp issue
 File:
 
 ```text
-~/projects/llama.cpp/src/llama-quant.cpp
+vendor/llama.cpp/src/llama-quant.cpp
 ```
 
 Patch:
@@ -485,7 +485,7 @@ uv run --with gguf python verify_glm52_mixed.py \
 If rebuilding llama.cpp from scratch, remember to apply/keep the local MTP patch in:
 
 ```text
-~/projects/llama.cpp/src/llama-quant.cpp
+vendor/llama.cpp/src/llama-quant.cpp
 ```
 
 Otherwise quantization can fail on blk.78 with:
@@ -518,7 +518,7 @@ this quantization requires an importance matrix
 /Volumes/Data NVME/GLM-5.2-GGUF/imatrix_unsloth.gguf
 
 # patched llama.cpp
-/Users/spotted/projects/llama.cpp
+vendor/llama.cpp
 ```
 
 ---
@@ -536,8 +536,8 @@ Future agents should read `AGENTS.md` and `GLM52_SESSION_MEMORY.md` before GLM-5
 Created executable baseline scripts:
 
 ```text
-scripts/baselines/glm52_merge_sort_baseline.sh
-scripts/baselines/glm52_longctx_retrieval_baseline.sh
+common/baselines/glm52_merge_sort_baseline.sh
+common/baselines/glm52_longctx_retrieval_baseline.sh
 ```
 
 ### Baseline script 1: merge sort short coding task
@@ -546,7 +546,7 @@ Run:
 
 ```bash
 cd "/Volumes/Data NVME/gguf2mlx"
-./scripts/baselines/glm52_merge_sort_baseline.sh
+./common/baselines/glm52_merge_sort_baseline.sh
 ```
 
 Default output:
@@ -572,7 +572,7 @@ Run:
 
 ```bash
 cd "/Volumes/Data NVME/gguf2mlx"
-./scripts/baselines/glm52_longctx_retrieval_baseline.sh
+./common/baselines/glm52_longctx_retrieval_baseline.sh
 ```
 
 Default prompt:
@@ -627,7 +627,7 @@ Both baseline scripts accept environment overrides:
 MODEL=/path/to/model.gguf \
 CLI=/path/to/llama-cli \
 OUT=/path/to/output.txt \
-./scripts/baselines/glm52_longctx_retrieval_baseline.sh
+./common/baselines/glm52_longctx_retrieval_baseline.sh
 ```
 
 The long-context script also accepts:
@@ -635,7 +635,7 @@ The long-context script also accepts:
 ```bash
 PROMPT_FILE=/path/to/prompt.md \
 TOK=/path/to/llama-tokenize \
-./scripts/baselines/glm52_longctx_retrieval_baseline.sh
+./common/baselines/glm52_longctx_retrieval_baseline.sh
 ```
 
 ---
@@ -744,10 +744,10 @@ Analyzer should report top experts by language, language-vs-task overlap, router
 Created a multilingual smoke-test suite for tracing:
 
 ```text
-prompts/tracing/glm52_trace_smoke_suite.json
-prompts/tracing/glm52_trace_smoke_suite.expanded.jsonl
-prompts/tracing/README.md
-scripts/tracing/expand_smoke_suite.py
+common/prompts/glm52_trace_smoke_suite.json
+common/prompts/glm52_trace_smoke_suite.expanded.jsonl
+common/prompts/README.md
+common/scripts/expand_smoke_suite.py
 ```
 
 Counts:
@@ -770,7 +770,7 @@ chemistry:         3 base / 21 expanded
 cybersecurity:     3 base / 21 expanded
 ```
 
-Use `scripts/tracing/expand_smoke_suite.py` to regenerate or filter the expanded JSONL by language/domain.
+Use `common/scripts/expand_smoke_suite.py` to regenerate or filter the expanded JSONL by language/domain.
 
 ### Trace smoke thinking-budget decision
 
@@ -807,18 +807,18 @@ the tracer was the single genuine unimplemented piece the plan pointed at.
 ### Python framework (this repo)
 
 ```text
-src/gguf2mlx/tracing/__init__.py
-src/gguf2mlx/tracing/schema.py        # MoeRoutingRecord, RunMetadata, schema v1
-src/gguf2mlx/tracing/writer.py        # bounded async JSONL writer + backpressure
-src/gguf2mlx/tracing/analyze.py       # JSONL -> markdown report + summary JSON
-src/gguf2mlx/tracing/compare.py       # side-by-side model/run comparison
-src/gguf2mlx/tracing/synth.py         # deterministic synthetic trace generator
-scripts/tracing/analyze_moe_trace.py
-scripts/tracing/compare_trace_reports.py
-scripts/tracing/make_synth_trace.py
-scripts/tracing/run_glm52_moe_trace.sh        # single-prompt live traced run
-scripts/tracing/run_trace_task_suite.sh       # multilingual smoke-suite traced run
-traces/README.md
+glm52_kitchen/tracing/__init__.py
+glm52_kitchen/tracing/schema.py        # MoeRoutingRecord, RunMetadata, schema v1
+glm52_kitchen/tracing/writer.py        # bounded async JSONL writer + backpressure
+glm52_kitchen/tracing/analyze.py       # JSONL -> markdown report + summary JSON
+glm52_kitchen/tracing/compare.py       # side-by-side model/run comparison
+glm52_kitchen/tracing/synth.py         # deterministic synthetic trace generator
+common/scripts/analyze_moe_trace.py
+common/scripts/compare_trace_reports.py
+common/scripts/make_synth_trace.py
+common/scripts/run_glm52_moe_trace.sh        # single-prompt live traced run
+common/scripts/run_trace_task_suite.sh       # multilingual smoke-suite traced run
+common/traces/README.md
 tests/test_tracing_schema_writer.py
 tests/test_tracing_analyze.py
 ```
@@ -826,10 +826,10 @@ tests/test_tracing_analyze.py
 ### C++ backend (patched llama.cpp tree)
 
 ```text
-/Users/spotted/projects/llama.cpp/examples/trace-moe/trace-moe.cpp
-/Users/spotted/projects/llama.cpp/examples/trace-moe/CMakeLists.txt
+vendor/llama.cpp/examples/trace-moe/trace-moe.cpp
+vendor/llama.cpp/examples/trace-moe/CMakeLists.txt
 # registered in examples/CMakeLists.txt after eval-callback
-# built: /Users/spotted/projects/llama.cpp/build-metal/bin/llama-trace-moe
+# built: vendor/llama.cpp/build-metal/bin/llama-trace-moe
 ```
 
 The backend hooks the ggml backend eval callback (`cb_eval`), filters by tensor
@@ -1064,15 +1064,15 @@ These strengthened or stayed stable from 49 → 161 prompts:
   (model loaded once via batched mode; ~2.5× the record volume of the 49-prompt
   run for ~3.4× the prompts — shorter prompts include more tokens in the
   profiled window).
-- Artifacts: `reports/glm52_multilingual_full_report.md` + `_summary.json`,
-  traces in `traces/batch/multilingual_full/` (gitignored, regenerable via
-  `ONE_PER_COMBO=0 bash scripts/tracing/run_trace_suite_batched.sh`).
+- Artifacts: `common/reports/glm52_multilingual_full_report.md` + `_summary.json`,
+  traces in `common/traces/batch/multilingual_full/` (gitignored, regenerable via
+  `ONE_PER_COMBO=0 bash common/scripts/run_trace_suite_batched.sh`).
 
 ## Code-switch routing study (2026-06-20, 16 prompts)
 
 Implemented Story 7's last open AC (code-switching prompts labeled with
 multiple languages such as `en+it` or `en+zh`) by authoring a small manual
-suite `prompts/tracing/glm52_code_switch_suite.expanded.jsonl`: 6 language
+suite `common/prompts/glm52_code_switch_suite.expanded.jsonl`: 6 language
 pairs (en+{it,zh,es,fr,de,pt}) × 3 domains (coding, math, physics) plus 1
 triple-language (en+zh+es) = 16 prompts total. Each prompt bilingualizes the
 request naturally so the model must parse both languages to answer (e.g.
@@ -1423,7 +1423,7 @@ output: the model has fallback behavior. But it's behaviorally suboptimal.)
 ### Discovery 3: empirical confirmation via 823-tensor instrumented probe
 
 To make this airtight rather than a code-reading claim, I temporarily patched
-`trace_cb_eval` in `/Users/spotted/projects/llama.cpp/examples/trace-moe/trace-moe.cpp`
+`trace_cb_eval` in `vendor/llama.cpp/examples/trace-moe/trace-moe.cpp`
 to log every tensor name the eval callback sees (deduplicated via
 `std::unordered_set<std::string>`), then ran a 1-token forward pass against
 GLM-5.2 mixed GGUF with `TRACE_MAX_TOKENS=1 CTX=512 N_PRED=1 PROMPT_TEXT=hi`.
@@ -1891,23 +1891,23 @@ captured via `--trace-activations q_nope_absorbed,kv_cmpr`. NO new C++ event
 type was added — the C++ tracer (already built in Phase 4 for activation
 summaries) is reused. The new work is purely Python-side analyzer:
 
-- New module: `src/gguf2mlx/tracing/retrieval.py` (~440 LoC including
+- New module: `glm52_kitchen/tracing/retrieval.py` (~440 LoC including
   doc_strings) — `RetrievedPosition`, `RetrievalResult`, `RetrievalAnalysis`
   dataclasses + `analyze_retrieval()` + `to_summary_dict()` +
   `render_markdown()` + `signed_overlap()` + `distance_bucket()`.
-- Extension to `src/gguf2mlx/tracing/analyze.py`: `build_summary()` now
+- Extension to `glm52_kitchen/tracing/analyze.py`: `build_summary()` now
   accepts optional `retrieval_q_stem` / `retrieval_k_stem` /
   `retrieval_topn` / `sentinel_position_range` keyword args; populates
   `summary["retrieval_analysis"]` when set; `render_markdown()` splices in
   the new "## MLA retrieval analysis (Phase 3 / Story 5 re-scoped)"
   section.
-- Extension to `src/gguf2mlx/tracing/__init__.py`: exports the new module's
+- Extension to `glm52_kitchen/tracing/__init__.py`: exports the new module's
   public symbols (`analyze_retrieval`, `RetrievalAnalysis`, etc.).
-- Extension to `scripts/tracing/analyze_moe_trace.py`: new CLI flags
+- Extension to `common/scripts/analyze_moe_trace.py`: new CLI flags
   `--retrieval-stems q,k`, `--retrieval-topn N`, `--sentinel-position-range
   START,END` (with `--sentinel-range` parsing helper supporting both `'S,E'`
   and `'S-E'` separators).
-- Wrapper script: `scripts/tracing/run_glm52_moe_trace.sh` gained
+- Wrapper script: `common/scripts/run_glm52_moe_trace.sh` gained
   `TRACE_BATCH_SIZE` env-var passthrough (needed because the 18,745-token
   BLUE-FALCON prompt exceeds the default n_batch=2048, which triggers
   `GGML_ASSERT(n_tokens_all <= cparams.n_batch) failure` in llama_decode).
@@ -1969,7 +1969,7 @@ Real long-ctx retrieval task: 18,745-token BLUE-FALCON-48217 retrieval prompt
 - Passed to analyzer as `--sentinel-position-range 50,60` (widened by 1 token
   on each side for off-by-one tolerance).
 
-**Analyzer results** (`reports/glm52_retr_longctx_report.md`):
+**Analyzer results** (`common/reports/glm52_retr_longctx_report.md`):
 
 ```
 - (query, layer) pairs scored: 240  (24 gen-tokens × 10 layers stride=8)
@@ -2093,7 +2093,7 @@ and extends the analyzer with a parallel by-language aggregation.
 
 ### Implementation
 
-- **New script** `scripts/tracing/analyze_activation_cross_task.py`
+- **New script** `common/scripts/analyze_activation_cross_task.py`
   (~330 LoC): reads the existing `analyze_moe_trace.py` summary JSON
   and computes, per (layer, tensor_stem):
     - Pairwise Jaccard overlap of top-N channels between every task pair
@@ -2103,11 +2103,11 @@ and extends the analyzer with a parallel by-language aggregation.
     - The "task-specific" = channels unique to one task
     - Per-task total unique channel count (summed across layers)
   Outputs markdown + JSON.
-- **Extended `src/gguf2mlx/tracing/analyze.py` build_summary()**: added
+- **Extended `glm52_kitchen/tracing/analyze.py` build_summary()**: added
   `ch_freq_by_lang` parallel counter → emits
   `activation_summary.rows_by_language` alongside the existing `rows`
   (by task). Same counter pattern, one extra dict; near-zero overhead.
-- **Extended batched wrapper `scripts/tracing/run_trace_suite_batched.sh`**:
+- **Extended batched wrapper `common/scripts/run_trace_suite_batched.sh`**:
   now passes through `TRACE_LAYERS` / `TRACE_MAX_TOKENS` /
   `TRACE_ACTIVATIONS` / `TRACE_ACTIVATION_TOPK` / `TRACE_ACTIVATION_STRIDE`
   env vars to the C++ tracer (previously the batched mode had no
@@ -2462,7 +2462,7 @@ marker (BOS, EOS), or a genuine semantic primitive?
 
 ### Implementation
 
-- New script `scripts/tracing/analyze_channel_focus.py` (~430 LoC, ruff clean):
+- New script `common/scripts/analyze_channel_focus.py` (~430 LoC, ruff clean):
   reads raw trace files, finds records where the target channel is in the
   per-token top-K, computes:
     - Overall appearance rate + rank-1 rate
@@ -3102,7 +3102,7 @@ Not a positional encoding (doesn't fire on positions 1+), not a content marker (
 <1% across contents), not an embedding-side feature (embedding doesn't encode any role for
 channel 4386). It is an emergent property of the deep transformer blocks.
 
-Evidence artifact: `reports/glm52_channel_4386_not_in_embedding_report.md` (full per-prompt
+Evidence artifact: `common/reports/glm52_channel_4386_not_in_embedding_report.md` (full per-prompt
 correlation tables, top-common-tokens table, per-channel vocab-wide stats, neighbor comparison).
 
 Cost: ~45 min total (single Python script using gguf.dequantize + multiple correlation tests,
@@ -3111,8 +3111,8 @@ no new C++ runs).
 
 **Scope:** Non-destructive. Identifies which tensors in the 232 GB mixed GLM-5.2 GGUF
 can be safely pruned for a baseline-inference build. Full markdown at
-`reports/glm52_prune_inventory.md`, full tensor inventory at
-`reports/glm52_prune_inventory.json`.
+`layer-level-structured-pruning/reports/glm52_prune_inventory.md`, full tensor inventory at
+`layer-level-structured-pruning/reports/glm52_prune_inventory.json`.
 
 ### Inventory (9 shards, 1809 tensors, 249.18 GB)
 
@@ -3125,7 +3125,7 @@ can be safely pruned for a baseline-inference build. Full markdown at
 
 ### Loader-code findings (refine the prune plan)
 
-`/Users/spotted/projects/llama.cpp/src/models/glm-dsa.cpp` `load_arch_tensors`:
+`vendor/llama.cpp/src/models/glm-dsa.cpp` `load_arch_tensors`:
 
 ```cpp
 for (int i = 0; i < n_layer_all; ++i) {
@@ -3156,7 +3156,7 @@ Phase 3 (DSA unblock attempt) proved both:
 
 **Primary prune target: 22 `blk.78.*` tensors (5.60 GB).** Loader-tolerant by
 design — no llama.cpp patches needed. Implementation:
-1. Write `scripts/prune_gguf.py` (~100 LoC, uses `gguf-py` GGUFReader → GGUFWriter)
+1. Write `layer-level-structured-pruning/scripts/prune_gguf.py` (~100 LoC, uses `gguf-py` GGUFReader → GGUFWriter)
 2. Run on shard 9 only (17.36 GB → 11.76 GB), keep other 8 shards unmodified
 3. Verify load + run both baselines (merge sort + long-ctx retrieval)
 4. Pass criteria: byte-identical output + perf within ±5% of baseline
@@ -3221,7 +3221,7 @@ Out of scope for current traces/pruning work.
 
 ## Phase 7b — MTP prune implemented + verified byte-identical to mixed (2026-06-21)
 
-**Scope:** Wrote `scripts/prune_gguf.py` (~200 LoC), produced
+**Scope:** Wrote `layer-level-structured-pruning/scripts/prune_gguf.py` (~200 LoC), produced
 `GLM-5.2-pruned-IQ2S-experts-IQ4NL-rest/` (shards 2-8 symlinked to originals,
 shard 9 pruned 17.36 → 11.75 GB; shard 1 patched `split.tensors.count` 1809 →
 1782). Verified byte-identical routing/activation traces + identical BLUE-FALCON
@@ -3232,7 +3232,7 @@ RAM savings during inference are negligible since the MTP tensors were never
 loaded to active memory anyway (the loader's `TENSOR_SKIP` flag means they
 weren't being used but they were being memory-mapped).
 
-### Tool: `scripts/prune_gguf.py`
+### Tool: `layer-level-structured-pruning/scripts/prune_gguf.py`
 
 Two modes:
 - `--exclude 'blk.78.*'` — prunes matching tensor-name globs from a data shard
@@ -3370,11 +3370,11 @@ Files patched on the C++ side (4 changes, ~70 lines net):
      block (where pending_topk is cleared).
 
 Files added on the Python side:
- * `scripts/tracing/analyze_bi_scores.py`: aggregate BI per layer across all
-   prompts → produce `reports/glm52_shortgpt_bi_scores.{md,json}` with the
+ * `layer-level-structured-pruning/scripts/analyze_bi_scores.py`: aggregate BI per layer across all
+   prompts → produce `layer-level-structured-pruning/reports/glm52_shortgpt_bi_scores.{md,json}` with the
    top-N lowest-BI layer list + a renumber_map (original layer idx → new
    contiguous idx for kept layers) and the new block_count.
- * `scripts/prune_layers.py`: read a BI plan JSON, rewrite all 9 shards of
+ * `layer-level-structured-pruning/scripts/prune_layers.py`: read a BI plan JSON, rewrite all 9 shards of
    the source model into `--output-dir`. For shards 2..9 (data shards), each
    tensor whose name matches `blk.N.*` with N in drop set is excluded; every
    kept `blk.N.*` tensor is renamed to `blk.{new}.*` per renumber_map; non-blk
@@ -3384,20 +3384,20 @@ Files added on the Python side:
    `block_count_new` and `split.tensors.count` to the computed new total
    (both as INT32 — note `split.tensors.count` MUST be INT32 (type 5), not
    UINT32, mirroring the Phase 7b patch).
- * `scripts/prune_gguf.py` was extended with two new optional hooks on the
+ * `layer-level-structured-pruning/scripts/prune_gguf.py` was extended with two new optional hooks on the
    existing `prune_gguf()` function: `tensor_name_remap` (callable
    orig_name → new_name | None) and `kv_overrides` (dict fname → (value,
    GGUFValueType)). The hooks leave the original exclude-pattern behavior
    untouched; `prune_layers.py` is a thin wrapper around `prune_gguf()`.
 
 **Calibration run.** Reused the Phase 5b multilingual smoke suite
-(`prompts/tracing/glm52_trace_smoke_suite.expanded.jsonl`, 161 prompts across
+(`common/prompts/glm52_trace_smoke_suite.expanded.jsonl`, 161 prompts across
 7 languages × 7 domains) and ran llama-trace-moe in batched mode with
 `--trace-prompts`, `--trace-activations l_out`, `--trace-activation-stride
 1000` (so top-K activation_summary is suppressed; only BI records emit), and
 `--trace-phase prefill` (BI is meaningful only on residual evolution during
 prefill where full context flows through every layer at once).
- * `scripts/tracing/run_trace_suite_batched.sh` already supported
+ * `common/scripts/run_trace_suite_batched.sh` already supported
    `TRACE_ACTIVATIONS=`, `TRACE_ACTIVATION_TOPK=`,
    `TRACE_ACTIVATION_STRIDE=` env vars; no script changes needed.
  * Wall time: 6.2 min for 161 prompts (909,191 trace records total, of
@@ -3453,18 +3453,18 @@ with exactly 12 layers:
     new block_count: 67 (= 66 normal + 1 MTP)
     new model size: 227 GB → 191 GB (saved 36 GB ≈ 16%)
 
-  Saved plan: `reports/glm52_shortgpt_bi_scores_spaced12.json`
+  Saved plan: `layer-level-structured-pruning/reports/glm52_shortgpt_bi_scores_spaced12.json`
   Pruned model: `GLM-5.2-shortgpt-pruned-IQ2S-experts-IQ4NL-rest/`
 
 **Baselines verification (both pass).**
 
-  Phase 7b's methodology was reused verbatim: run `scripts/baselines/
-  glm52_merge_sort_baseline.sh` and `scripts/baselines/glm52_longctx_
+  Phase 7b's methodology was reused verbatim: run `common/baselines/
+  glm52_merge_sort_baseline.sh` and `common/baselines/glm52_longctx_
   retrieval_baseline.sh` with the pruned model as `MODEL`. Output files
-  saved under `traces/shortgpt_pruned_baselines/` for byte-level diffing.
+  saved under `layer-level-structured-pruning/traces/shortgpt_pruned_baselines/` for byte-level diffing.
 
   Merge sort:
-    -+Wrote traces/shortgpt_pruned_baselines/merge_sort_spacedN12.txt
+    -+Wrote layer-level-structured-pruning/traces/shortgpt_pruned_baselines/merge_sort_spacedN12.txt
     - perf: 41.5 prompt t/s  |  23.6 gen t/s
       (Phase 7b un-pruned reference: 39.2 / 25.6)
     - extraction of first ```python block to /tmp/merge_sort_pruned.py +
@@ -3475,7 +3475,7 @@ with exactly 12 layers:
       algorithm with a `temp[]` scratch array.
 
   BLUE-FALCON long-context retrieval (~18.7k-token prompt):
-    -+Wrote traces/shortgpt_pruned_baselines/longctx_BLUE_FALCON_spacedN12.txt
+    -+Wrote layer-level-structured-pruning/traces/shortgpt_pruned_baselines/longctx_BLUE_FALCON_spacedN12.txt
     - perf: 90.9 prompt t/s  |  13.5 gen t/s
       (un-pruned Phase 7b reference: 76.9 / 11.4)
     - Expected: sentinel=BLUE-FALCON-48217, function=repair_event_stream,
@@ -3618,7 +3618,7 @@ it just picks the N lowest-BI layers. This investigation confirms why
 Phase 8's first attempt (picking N=16 lowest-BI → 14 contiguous in L51-L64)
 failed and validates the manual adjacency-filter workaround used to build
 the passing plan. The adjacency filter should be ADDED to
-`scripts/tracing/analyze_bi_scores.py` as a default; otherwise every new
+`layer-level-structured-pruning/scripts/analyze_bi_scores.py` as a default; otherwise every new
 GLM-5.2 prune will be tempted to make the same contiguous-drop mistake.
 
 **Cost: ~20 min (3 short traces × 2.5sec + analysis + writeup).**
@@ -3641,15 +3641,15 @@ start any of them.
 The default `--max-contiguous-drops 1` cap (added in commit `ee3a6f5`)
 makes N=16 SAFE for the first time. Existing artifacts support this:
 
-- Reusable input dataset: `traces/shortgpt_bi/calib/*.jsonl`
+- Reusable input dataset: `layer-level-structured-pruning/traces/shortgpt_bi/calib/*.jsonl`
   (161 prompts, 909,191 records, 457,605 `block_influence` events)
-- Reusable analyzer: `scripts/tracing/analyze_bi_scores.py`
+- Reusable analyzer: `layer-level-structured-pruning/scripts/analyze_bi_scores.py`
 - Already-generated v2 PASS plan stored in
-  `reports/glm52_shortgpt_bi_scores_v2.json`:
+  `layer-level-structured-pruning/reports/glm52_shortgpt_bi_scores_v2.json`:
   `drop = [3, 5, 7, 11, 42, 44, 46, 48, 51, 53, 56, 58, 60, 62, 64, 67]`
   (16 layers, 20.8% of 77 normal layers, NO two adjacent drops)
 - Expected savings: ~50 GB total (vs current 36 GB) → ~177 GB on disk
-- Verification path: re-run `scripts/prune_layers.py` with the v2 plan,
+- Verification path: re-run `layer-level-structured-pruning/scripts/prune_layers.py` with the v2 plan,
   then re-execute the 9 smoke tests + BLUE-FALCON 18.7k retrieval.
 
 RISK: every 4 extra layers near the L36-L66 saturation zone adds ~10%
@@ -3660,7 +3660,7 @@ re-verification, not just smoke.
 ### 2. Recovery-aware picker (use the 3-way forensic data)
 
 The 3-way trace dataset at
-`traces/glm52-coding-en-cmp4386b_{unpruned,spaced12,failcontig16}-*.jsonl`
+`layer-level-structured-pruning/traces/glm52-coding-en-cmp4386b_{unpruned,spaced12,failcontig16}-*.jsonl`
 contains per-layer BI scores for THREE different post-prune models over
 the SAME prompt. This is forensic gold for designing a smarter picker:
 
@@ -3692,7 +3692,7 @@ kernels. Stacking:
   FFN gate/up/down → ~30 GB additional (rough estimate)
 - Will require implementing Wanda's activation-aware score (uses the
   same `l_out` traces already collected in
-  `traces/batch/activation_full_161/*.jsonl` — 637,158 records across
+  `common/traces/batch/activation_full_161/*.jsonl` — 637,158 records across
   161 prompts × 7 languages × 7 domains, stride=6, topk=15) as
   calibration inputs
 - Apple Silicon MLX supports 2:4 sparsity in some kernels — Wanda's
@@ -3718,12 +3718,12 @@ makes them interesting PRUNE CANDIDATES, not interpretability-only:
   ShortGPT entirely. Could potentially save ~tens of MB by removing
   +16k unused channels per layer (assuming only ~50 of 6144 channels
   fire meaningfully across deep layers per Phase 5b finding #2).
-- REUSABLE DATA: `traces/batch/activation_full_161/*.jsonl` already
+- REUSABLE DATA: `common/traces/batch/activation_full_161/*.jsonl` already
   contains per-token top-K channel activations across all 76 layers
   for 161 prompts — can score every channel for rarity-in-top-K, then
   dropout the channels that NEVER fire significantly at any (task,
   language, token-position).
-- Tooling needed: new `scripts/prune_channels.py` analogous to
+- Tooling needed: new `layer-level-structured-pruning/scripts/prune_channels.py` analogous to
   `prune_layers.py` but at the channel dimension of `output_norm`
   and `token_embd` row dimension
 - RISK: HIGH. The #4386 investigation proved it's LEARNED at depth,
@@ -3738,12 +3738,12 @@ makes them interesting PRUNE CANDIDATES, not interpretability-only:
 
 All four paths reuse one of these already-committed datasets:
 
-- `traces/shortgpt_bi/calib/*.jsonl` — 161-prompt BI scores (paths 1, 2)
-- `traces/batch/activation_full_161/*.jsonl` — 161-prompt activation
+- `layer-level-structured-pruning/traces/shortgpt_bi/calib/*.jsonl` — 161-prompt BI scores (paths 1, 2)
+- `common/traces/batch/activation_full_161/*.jsonl` — 161-prompt activation
   top-K (paths 3, 4)
-- `traces/glm52-coding-en-cmp4386b_*.jsonl` — 3-way forensic
+- `layer-level-structured-pruning/traces/glm52-coding-en-cmp4386b_*.jsonl` — 3-way forensic
   comparison (path 2)
-- `reports/glm52_shortgpt_bi_scores_v2.json` — v2 plan ready-to-run
+- `layer-level-structured-pruning/reports/glm52_shortgpt_bi_scores_v2.json` — v2 plan ready-to-run
   (path 1)
 
 NO new tracing is required to START any of these. They differ only in
@@ -3897,3 +3897,45 @@ uv run --no-project --with gguf --with numpy python -m py_compile prune_layers.p
 quant_glm52_mixed.sh --dry-run: exit 0; native llama-quantize --dry-run pass
 uv run --no-project --with gguf --with numpy python prune_layers.py --dry-run: exit 0
 ```
+
+### 2026-06-21 — DSA / IndexShare research library vendored
+
+**Context:** Prior responses investigating the IndexShare forward-path gap
+(PLAN.md §8 item 2 — stock `mlx_lm.models.glm_moe_dsa` subclasses
+`deepseek_v32.Model` with no IndexShare forward path; stock `llama.cpp`
+`glm-dsa.cpp:152` aliases to `deepseek32::graph` with zero indexer references)
+cited six arXiv papers by ID only. Future sessions could not reload them on
+demand and risked re-hallucinating the IDs. Decided to verify, fetch, and
+vendor the actual PDFs locally so the math is reproducible.
+
+**Action:** Verified all six arXiv IDs resolve (HTTP HEAD 200 on the PDF
+endpoint, titles confirmed by re-fetching the abstract pages), downloaded
+each PDF, and confirmed each is a valid `PDF document, version 1.7`:
+
+```text
+docs/research/papers/
+  deepseek-v3.2-dsa-2512.02556.pdf      0.98 MB  10pp  DSA origin
+  glm5-tech-report-2602.15763.pdf      6.18 MB  11pp  GLM-5 architecture
+  indexcache-indexshare-2603.12201.pdf  0.53 MB  10pp  IndexShare F/S pattern
+  streamindex-v4-csa-2605.02568.pdf     0.55 MB   8pp  V4 CSA streaming top-k
+  flashmemory-deepseek-v4-2606.09079.pdf 0.61 MB  4pp  V4 hybrid HCA+CSA
+  misa-dsa-repro-2605.07363.pdf        2.11 MB  11pp  3rd-party DSA repro
+docs/research/README.md                per-paper abstract quotes + reading order
+Total disk: ~10 MB
+```
+
+**Verified fact (durable for future forward-path work; verbatim from IndexCache abstract):** the F/S
+pattern is — verbatim — "a small set of Full layers that run their own
+indexers and a majority of Shared layers that simply reuse the nearest Full
+layer's top-k indices." S layers **should NOT** have indexer tensors of
+their own. This is the canonical published answer to the prior-session
+"anomaly" that the shortgpt-pruned GGUF carries 330 DSA indexer tensors
+across 66 blocks (= ~5/layer on every layer). If every layer really does
+carry indexers, then either the source GGUF materialized indexers on all
+layers as a compat artifact, or the prior scans over-counted — this must
+be re-verified against the source prior to any forward-path implementation.
+If only some layers do, the per-layer F/S assignment must be derived from
+layer index or found in the model card.
+
+Cross-linked from `AGENTS.md` (new `## DSA / IndexShare forward-path
+research library` section) and `PLAN.md` §10 / §7.M AC7.
