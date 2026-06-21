@@ -26,11 +26,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
       - name: Syntax checks
         shell: bash
         run: |
           bash -n mixed-precision-quantization/scripts/quant_glm52_mixed.sh
-          python3 -m py_compile \
+          uv run --with gguf --with numpy python -m py_compile \
             layer-level-structured-pruning/scripts/prune_layers.py \
             layer-level-structured-pruning/scripts/prune_gguf.py
 
@@ -41,8 +44,8 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     # Requires a self-hosted macOS runner with custom label `glm52` and:
     # - /Volumes/Data NVME/GLM-5.2-GGUF populated
-    # - vendor/llama.cpp/build-metal/bin/llama-quantize built
-    # - Python deps for prune_layers.py available (gguf + numpy)
+    # - cmake/Xcode command-line tools available for first-time llama.cpp build
+    # - uv available (setup below installs it if missing)
     runs-on: [self-hosted, macOS, glm52]
     timeout-minutes: 120
     env:
@@ -54,14 +57,28 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          # Preserve vendor/llama.cpp/build-metal between self-hosted runs.
+          clean: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Syntax checks
         shell: bash
         run: |
           bash -n mixed-precision-quantization/scripts/quant_glm52_mixed.sh
-          python3 -m py_compile \
+          uv run --with gguf --with numpy python -m py_compile \
             layer-level-structured-pruning/scripts/prune_layers.py \
             layer-level-structured-pruning/scripts/prune_gguf.py
+
+      - name: Build patched llama.cpp binaries if missing
+        shell: bash
+        run: |
+          if [[ ! -x vendor/llama.cpp/build-metal/bin/llama-quantize ]]; then
+            bash mixed-precision-quantization/scripts/build_llamacpp.sh
+          else
+            echo "llama-quantize already built: vendor/llama.cpp/build-metal/bin/llama-quantize"
+          fi
 
       - name: Quantization dry-run integration
         shell: bash
@@ -71,7 +88,8 @@ jobs:
       - name: Layer-pruning dry-run integration
         shell: bash
         run: |
-          python3 layer-level-structured-pruning/scripts/prune_layers.py \
+          uv run --with gguf --with numpy python \
+            layer-level-structured-pruning/scripts/prune_layers.py \
             --input-dir "$MIXED_MODEL_DIR" \
             --plan "$BI_PLAN" \
             --dry-run

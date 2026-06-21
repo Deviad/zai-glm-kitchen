@@ -3851,3 +3851,25 @@ already exist. GitHub orchestrates the job; the large model remains local.
 the self-hosted `glm52` runner because that machine has local model artifacts and
 other trusted local paths mounted. The workflow now skips the self-hosted job for
 forked pull requests; lightweight GitHub-hosted syntax checks still run.
+
+### 2026-06-21 — CI runner bootstrap for dry-run pipeline
+
+**Finding:** The first self-hosted GitHub Actions run failed because the runner
+checkout did not have `vendor/llama.cpp/build-metal/bin/llama-quantize`; GitHub
+Actions workspaces are fresh enough that build artifacts cannot be assumed.
+
+**Fix:** `.github/workflows/glm52-dry-run.yml` now installs/uses `uv`, runs Python
+checks and the prune dry-run through `uv run --with gguf --with numpy python`,
+sets `actions/checkout` to `clean:false` on the self-hosted job so build outputs
+can persist between runs, and adds a "Build patched llama.cpp binaries if missing"
+step before `quant_glm52_mixed.sh --dry-run`. The quant script's embedded Python
+helpers also use `uv run --with gguf --with numpy python` by default.
+
+Verified result:
+
+```text
+bash -n quant_glm52_mixed.sh: pass
+uv run --with gguf --with numpy python -m py_compile prune_layers.py prune_gguf.py: pass
+quant_glm52_mixed.sh --dry-run: exit 0; tensor-types mtime unchanged; native quant dry-run pass
+uv run --with gguf --with numpy python prune_layers.py --dry-run: exit 0
+```

@@ -34,9 +34,10 @@ Run `prune_layers.py --dry-run` before writing pruned shards. It is idempotent:
 it does not create output directories or GGUF shards. It eagerly imports
 `prune_gguf`, validates the pruning hook API, loads the BI plan, scans source
 GGUF shards, reports dropped/kept tensor counts, and previews `blk.78` MTP
-renumbering. Exit code contract: `0` means all checks passed; any non-zero
-status means dry-run failure or invalid CLI invocation and stderr names the
-error.
+renumbering. In CI/manual recipes, run it via
+`uv run --with gguf --with numpy python`. Exit code contract: `0` means all
+checks passed; any non-zero status means dry-run failure or invalid CLI invocation
+and stderr names the error.
 
 ## Reports (12)
 
