@@ -6,3 +6,6 @@
 	path = vendor/llama.cpp
 	url = git@github.com:Deviad/llama.cpp.git
 	branch = feature/patch_used_to_create_mixed_quantization_of_glm5.2
+[submodule "vendor/mlx-lm"]
+	path = vendor/mlx-lm
+	url = https://github.com/ml-explore/mlx-lm.git
