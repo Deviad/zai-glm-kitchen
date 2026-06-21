@@ -3836,3 +3836,11 @@ error path. The documented CI contract is now `0 = all checks passed` and
 all dry-run errors to exit `1`. Added `.github/workflows/glm52-dry-run.yml` for a
 self-hosted macOS runner that runs syntax checks, `quant_glm52_mixed.sh --dry-run`,
 and `prune_layers.py --dry-run` against the local GLM-5.2 model artifacts.
+
+### 2026-06-21 — Two-tier GitHub Actions dry-run workflow
+
+**Decision:** Do not host the 200+ GB GLM-5.2 model on GitHub. The CI workflow is
+two-tier: a GitHub-hosted Ubuntu `lightweight` job runs syntax/compile checks, and
+a `real-model-dry-run` job runs only on a self-hosted macOS runner labeled `glm52`
+where `/Volumes/Data NVME/GLM-5.2-GGUF` and the built patched llama.cpp binaries
+already exist. GitHub orchestrates the job; the large model remains local.
