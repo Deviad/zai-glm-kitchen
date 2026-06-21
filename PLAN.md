@@ -248,12 +248,73 @@ Assertions:
 - Tokenizer + chat template reproduce GLM specials and multi-EOS.
 - New unit tests + smoke pass; no regression for existing archs (deepseek2, qwen2moe, qwen3moe, llama).
 
+### 7.M — Mixed-precision MLX export of ShortGPT-pruned GLM-5.2 (Story)
+
+**User story.** As a researcher comparing GLM-5.2 on Apple Silicon, I need the
+ShortGPT-pruned mixed-precision GGUF exported to **MLX-native affine
+quantization mirroring the same policy** (routed experts → 2-bit, non-expert
+linears → 4-bit) in a **separate `*-mlx` output folder**, so that the MLX
+artifact preserves the expert/rest bit-width split instead of collapsing to a
+uniform 4-bit/8-bit blob (matching the GGUF baseline's mixed IQ2_S/IQ4_NL
+policy in spirit, using MLX's own affine format since MLX has no IQ-series).
+
+**Acceptance criteria (objective, checkable):**
+
+- AC1 — Output written to a **separate folder with `mlx` in the name**:
+  `/Volumes/Data NVME/GLM-5.2-MLX/GLM-5.2-shortgpt-pruned-mixed-mlx/`. No files
+  are written back into the GGUF source dir or the kitchen repo tree.
+- AC2 — `config.json` carries `model_type: glm_moe_dsa`, `architectures:
+  ["GlmMoeDsaForCausalLM"]`, `num_experts: 256`, `num_nextn_predict_layers`
+  and `num_hidden_layers` consistent with the pruned GGUF metadata
+  (`glm-dsa.block_count=67`, `…nextn_predict_layers=1` → `num_hidden_layers=66`;
+  66 unique `blk.{0..65}.indexer.*` tensor groups confirmed in source).
+- AC3 — **Mixed-precision provenance**: routed-expert (`mlp.experts.*` /
+  `switch_mlp`) tensors are stored as MLX affine **2-bit** group_size=64;
+  non-expert linears (attention `q/k/v/o_*proj`, shared experts, `lm_head`) are
+  MLX affine **4-bit** group_size=64. Verified by (a) a `quantization` block in
+  `config.json` carrying the per-module predicate recipe, and (b) the saved
+  safetensors exposing paired `*.scales` / `*.biases` tensors alongside each
+  quantized weight with the expected 2-bit packing width for experts.
+- AC4 — Tokenizer artifacts (`tokenizer.json`, `vocab.json`, `merges.txt`,
+  `tokenizer_config.json`, `generation_config.json` with multi-EOS `[154820,
+  154827, 154829]`) are present and loadable by `transformers.AutoTokenizer`.
+- AC5 — **No fp16 intermediate on disk**: conversion streams GGUF → dequant
+  (per-tensor, in memory) → MLX-quantize → shard, so peak disk usage during
+  conversion ≤ pruned GGUF (~205 GB) + final MLX (~250–300 GB est.) + headroom,
+  i.e. fits within the ~464 GB currently free on `/Volumes/Data NVME`. The
+  naive `gguf2mlx → fp16 HF → mlx-lm convert -q` path is explicitly rejected
+  (fp16 intermediate = ~1.25 TB, does not fit).
+- AC6 — Short-context merge-sort baseline (mirrors
+  `scripts/baselines/glm52_merge_sort_baseline.sh`) loads via `mlx_lm.load`
+  and produces a correct non-recursive merge sort passing the 6 Python sanity
+  cases — same floor REAP37-compat reached.
+- AC7 — **Known-blocked (IndexShare, REAP37 precedent)**: long-context
+  BLUE-FALCON 18.7k retrieval is *not* expected to pass until proper
+  IndexShare forward-path support lands in `mlx-lm`'s
+  `mlx_lm/models/deepseek_v32.py`. The shortgpt-pruned GGUF carries 330 DSA
+  indexer tensors across 66 blocks (the F/S pattern); stock `glm_moe_dsa`
+  subclasses `deepseek_v32.Model` which does not consume the indexer tensors.
+  Same failure mode documented in `REAP37_EXPERIMENTS.md` (compat hack →
+  loads, gibberish at long context). This AC is satisfied by documenting the
+  gap honestly in the output dir's `README.md`, not by passing retrieval.
+
 ---
 
 ## 8. External blockers (unchanged)
 
 1. **No GGUF producer in llama.cpp master** — `conversion/glm.py` registers `Glm4*` but not `GlmMoeDsa*`. Schema + tensor enum + metadata keys exist (small upstream PR away). Until then test input = synthetic fixture or community fork.
-2. **No `mlx-lm` model class** — `mlx_lm/models/` has no glm family. Converted MLX dir loads only once `glm_moe_dsa.py` ships upstream (DSA indexer kernel is the hard part there — inference concern, not conversion concern).
+2. **No `mlx-lm` IndexShare forward path** — ` mlx_lm/models/glm_moe_dsa.py`
+   *does* now exist (vendored at `vendor/mlx-lm/mlx_lm/models/glm_moe_dsa.py`, a
+   53-line subclass of `deepseek_v32.Model`), so GLM-5.2 is loadable by
+   `mlx_lm.load` at the class level. The remaining gap is the **IndexShare
+   forward path**: `deepseek_v32.py` does not consume the per-layer DSA indexer
+   tensors, so shared (S) layers crash on missing `indexer.*` parameters, and
+   the documented compat hack (duplicate F-layer indexers into S layers) loads
+   but produces gibberish at long context — see `REAP37_EXPERIMENTS.md`. This is
+   an *inference* concern; the conversion itself (Story 7.M) is unaffected and
+   produces a well-formed mixed-precision MLX dir regardless. Mirrors the
+   llama.cpp-side gap logged in `GLM52_SESSION_MEMORY.md` (glm-dsa aliased to
+   deepseek2::graph → indexer tensors loaded but never run in the forward pass).
 
 The conversion work itself is fully specified and low-risk — pure mechanical translator, every name confirmed against the published 1.5 TB weights.
 
