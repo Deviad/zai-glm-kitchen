@@ -18,6 +18,7 @@ git submodule update --init --recursive      # ~5 min for the llama.cpp clone
 |---|---|---|
 | `vendor/gguf2mlx` | `feature/update_for_glm5.2_cooking` (`90affca2…`) | Imported at runtime as `from gguf2mlx import convert` (declared as a uv path dep in `pyproject.toml`). End-to-end GGUF→MLX translator for the Phase 8 MLX conversion step. |
 | `vendor/llama.cpp` | `feature/patch_used_to_create_mixed_quantization_of_glm5.2` (`6f67b8a…`) | Pinned source of the patched llama.cpp fork. The patched build produces `llama-cli`, `llama-quantize`, `llama-trace-moe`, `llama-tokenize`, `llama-gguf-split` from `$ROOT/vendor/llama.cpp/build-metal/bin/`. The trace-moe example + ShortGPT Block Influence computation live in `examples/trace-moe/` inside the submodule. |
+| `vendor/mlx-lm` | `ml-explore/mlx-lm` main (`2c008fd…`, v0.31.3-13-g2c008fd) | Reference-only upstream `mlx-lm` (the Apple MLX LM inference library) cloned so the GLM-5.2 MLX-side code is greppable alongside the other vendored sources. The GLM-5.2 model class lives at `mlx_lm/models/glm_moe_dsa.py` (a 53-line subclass of `deepseek_v32.Model`); the actual MLA+DSA+IndexShare forward graph is in `mlx_lm/models/deepseek_v32.py`. **Not built or imported by the kitchen** — exists for code-reference only (e.g. the documented IndexShare blocker in `REAP37_EXPERIMENTS.md` / PLAN.md Issue 1.2). |
 
 > Submodule state is preserved: `build_llamacpp.sh` detects when `$LLAMA_SRC`
 > is the submodule (`.git` is a file, not a dir) and **skips the git

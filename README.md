@@ -17,6 +17,7 @@ translation only.
 |---|---|---|
 | `vendor/gguf2mlx` | `Deviad/gguf2mlx` @ `feature/update_for_glm5.2_cooking` | `from gguf2mlx import convert` — end-to-end GGUF→MLX translator, used for the Phase 8 MLX conversion step |
 | `vendor/llama.cpp` | `Deviad/llama.cpp` @ `feature/patch_used_to_create_mixed_quantization_of_glm5.2` | patched `llama-cli`, `llama-quantize`, `llama-trace-moe` binaries; trace-moe example + BI computation needed by every trace run + the mixed-precision `quant_glm52_mixed.sh` |
+| `vendor/mlx-lm` | `ml-explore/mlx-lm` @ `main` (`2c008fd…`, v0.31.3-13-g2c008fd) | **reference-only** upstream `mlx-lm` Apple MLX LM library; `mlx_lm/models/glm_moe_dsa.py` (53-line subclass of `deepseek_v32.Model`) + `mlx_lm/models/deepseek_v32.py` (the actual MLA+DSA+IndexShare forward graph; site of the documented IndexShare blocker in `REAP37_EXPERIMENTS.md`). Not built/imported by the kitchen — vendored so the GLM-5.2 MLX-side code is greppable alongside the other sources. |
 
 Both are pinned to the tip of their respective fork feature branches; after a
 fresh clone, run:
