@@ -38,8 +38,8 @@ gguf2mlx = { path = "vendor/gguf2mlx", editable = true }
 dev = ["pytest", "pytest-cov", "ruff", "mypy"]
 
 [build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 # Keep pytest scoped to the kitchen's own `tests/` directory — otherwise it
@@ -47,9 +47,8 @@ build-backend = "setuptools.build_meta"
 # and error out collecting their optional-dependency tests.
 testpaths = ["tests"]
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["glm52_kitchen*"]
+[tool.hatch.build.targets.wheel]
+packages = ["glm52_kitchen"]
 
 [tool.ruff]
 line-length = 100
