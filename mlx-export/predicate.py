@@ -1,7 +1,7 @@
 """Mixed-precision quantization predicate for GLM-5.2 streaming converter.
 
 Mirrors the GGUF source policy (IQ2_S experts / IQ4_NL rest) in MLX affine:
-  - Routed expert linears  → 2-bit affine (group_size=64)
+  - Routed expert linears  → 2-bit affine (group_size=64)  [override with $GLM52_EXPERT_BITS]
   - Other linears (attn, shared experts, indexer) → 4-bit affine (group_size=64)
   - Norms, embeddings, router, e_score_correction_bias, lm_head → fp16 (skip)
 
@@ -10,8 +10,14 @@ safetensors BEFORE mlx-lm's sanitize() runs). This matches the per-path key
 scheme that mlx-lm's quantize_model() writes into config.json["quantization"].
 """
 
+import os
+
 GROUP_SIZE = 64
 MODE = "affine"
+
+# Bit width for routed experts. Default 2 (mirrors GGUF IQ2_S). Override via env
+# var to test higher precision (e.g. GLM52_EXPERT_BITS=4 for a 4-bit probe).
+EXPERT_BITS = int(os.environ.get("GLM52_EXPERT_BITS", "2"))
 
 # Name fragments that should NEVER be quantized (kept in fp16)
 FP16_FRAGMENTS = (
@@ -46,9 +52,9 @@ def quant_rule(hf_name: str):
     if not hf_name.endswith(".weight"):
         return False
 
-    # Routed expert linears → 2-bit
+    # Routed expert linears → EXPERT_BITS (default 2; overridable via env)
     if ROUTED_EXPERT_FRAGMENT in hf_name and "shared_experts" not in hf_name:
-        return {"bits": 2, "group_size": GROUP_SIZE, "mode": MODE}
+        return {"bits": EXPERT_BITS, "group_size": GROUP_SIZE, "mode": MODE}
 
     # All other linears (attention, shared experts, indexer, kv_b_proj) → 4-bit
     # This catches: q_a_proj, q_b_proj, kv_a_proj_with_mqa, kv_b_proj, o_proj,
