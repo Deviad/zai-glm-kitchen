@@ -4072,3 +4072,101 @@ correct MLA + RoPE forward path in `deepseek_v32.py` (or a new
 glm_moe_dsa-specific forward) is the prerequisite. This is NOT a
 quantization or conversion bug; the converter output is sound.
 
+
+### 2026-06-22 — ROOT CAUSE FOUND: MLX gibberish was TWO conversion bugs, not a forward-path gap
+
+The prior conclusion ("not a quantization or conversion bug; converter output
+is sound; blocked on forward-path gap") was **WRONG**. Systematic layer-by-layer
+activation comparison between the MLX model and llama.cpp (`llama-eval-callback`
+on the same 13-token prompt) proved the converter output was corrupt in two
+independent ways. Both are now understood and fixed.
+
+**Method that cracked it.** Ran `llama-eval-callback -m <pruned-gguf> -ngl 99 -p
+"[gMASK]<sop><|user|>What is 2+2?<|assistant|><think></think>" -n 1` to dump
+every intermediate tensor (`norm-N`, `attn_norm-N`, `ffn_inp-N`, `l_out-N`,
+`ffn_moe_logits-N`, `ffn_moe_topk-N`, `ffn_shexp-N`, ...). Then replicated the
+MLX forward in Python layer by layer and compared corner values. Key technique:
+compare a *small fixed prompt* position-by-position, not aggregate stats.
+
+**Bug A — tokenizer dropped special tokens (`<think>`/`</think>` etc.).**
+- Symptom: MLX tokenized the chat-template prompt to **16 tokens**; llama.cpp to
+  **13**. MLX encoded the literal text `<think></think>` as 5 BPE pieces
+  (`<th`,`ink`,`></`,`think`,`>` = 13699,766,1472,26779,29) instead of the two
+  special tokens `<think>`=154841 / `</think>`=154842.
+- Cause: the converter's emitted `tokenizer.json` had only **25** `added_tokens`;
+  the real GLM-5.2 tokenizer has **36**, including the thinking/tool tokens.
+  `added_tokens_decoder` in `tokenizer_config.json` was empty, so the model could
+  DECODE id→`<think>` (vocab) but could not ENCODE `<think>`→id (no atomic rule).
+- **Fix:** copy the complete `tokenizer.json` from the original GLM-5.2 HF release
+  (the `GLM-5.2-REAP37-MLX-4bit` folder has the correct 36-added_token file; vocab
+  + 321,649 merges verified identical, 0 mismatches in 5,000 sampled tokens). Keep
+  our `tokenizer_config.json` (it carries the inline chat template). After the swap,
+  `tok.encode("[gMASK]<sop><|user|>What is 2+2?<|assistant|><think></think>")`
+  returns exactly the 13 IDs llama.cpp produces. Backups saved at
+  `<model>/_tokenizer_backup/tokenizer.json.broken`.
+- Also discovered: mlx-lm's `TokenizerWrapper.apply_chat_template` ignores
+  `enable_thinking` passed inside `chat_template_kwargs={...}`. Pass
+  `enable_thinking=False` as a TOP-LEVEL kwarg instead (the wrapper only forwards
+  the top-level name). With the bag form you silently get the thinking prompt.
+
+**Bug B — every MoE router weight was scrambled (the real gibberish driver).**
+- Symptom: first-token logits were nearly flat (top token logprob ≈ −2.5 vs
+  llama.cpp's −0.07 for the correct 'The'); generation degenerated to `2|2|2…`.
+  Layer trace: embeddings + RMSNorm + L0 + L1 + L2 (the dense layers) matched
+  llama.cpp to 4 decimals, but **L3 (first MoE layer) diverged** — MLX picked a
+  completely different expert set and produced near-uniform gate scores (all
+  ≈0.31), meaning the router could not discriminate.
+- Cause: `dequant_tensor()` in `mlx-export/gguf_to_mlx_streaming.py` did, for every
+  2-D F32/F16/F64/int tensor:
+  `np.array(tensor.data).reshape(logical_shape).T`.
+  But `gguf.GGUFReader` already exposes `tensor.data` in the reversed-logical
+  numpy shape, i.e. `(out, in)` — the same HF layout `gguf.dequantize` returns for
+  quantized blocks. Reshaping `(out,in)` memory to `logical_shape=(in,out)`
+  reinterprets/scrambles the bytes; the following `.T` does not undo it. In
+  GLM-5.2 the *only* 2-D F32 tensors are the MoE routers
+  `blk.N.ffn_gate_inp.weight` for every MoE layer (L3..L65) → all 63 routers were
+  corrupted. (Quantized Linears were fine because they went through the
+  `gguf_dequant(raw_data)` branch, which is already `(out,in)`.)
+  Verified: buggy `dequant_tensor` produced `[-0.0286,-0.0281,0.0532,0.0048,0.0835]`
+  (exactly what was baked into the broken model); the GGUF/llama.cpp value is
+  `[-0.0286,0.00201,0.0420,0.0786,-0.0452]`.
+- **Fix (committed in converter):** for F32/F16/F64/int, use `tensor.data` as-is
+  (no `.reshape(logical_shape)`, no `.T`) — it is already `(out,in)`, identical to
+  the quantized branch. See the rewritten `dequant_tensor` docstring.
+
+**Things proven CORRECT during the hunt (do not re-investigate):**
+- RoPE convention: GLM-DSA main attention is `LLAMA_ROPE_TYPE_NORM`=0=interleaved
+  ↔ MLX `traditional=True`. (NEOX lines in deepseek32.cpp are the *indexer* only.)
+  Match confirmed.
+- MLA q/k split order `[q_nope(192), q_pe(64)]`, kv_b 3-D→2-D combine, embed_q /
+  unembed_out shapes, `sanitize()` kv_b split — all correct.
+- MoE gate math: `sigmoid(x@Wg.T)` → unbiased `orig_scores`; `+e_score_correction_bias`
+  only for top-k *selection*; weights gathered from UNBIASED probs; `norm_topk_prob`
+  divide; `*routed_scaling_factor(2.5)`. Matches llama-graph.cpp exactly.
+- `e_score_correction_bias` ≈ 28.6 for all experts is GENUINE (present identically
+  in the GGUF); not a bug. Selection still works because the tiny sigmoid deltas
+  break ties.
+- Massive activation on token-1 (`<sop>`): swiglu→202, down_proj→36 in MLX. This is
+  the documented "massive activations / attention-sink" phenomenon and is PRESENT
+  IN llama.cpp too (`ffn_shexp-7` row 1 ≈ −10..+8). Benign, not the bug.
+- `mx.load`→`mx.save_safetensors` round-trip preserves norms on clean shards
+  (tested, SAFE).
+
+**Patch-in-place attempt FAILED — full re-convert required.**
+- Tried surgically rewriting only the 63 `mlp.gate.weight` tensors in the existing
+  shards (`/tmp/patch_gate_weights.py`). The routers got the correct values, BUT on
+  re-saving the affected shards the tiny F32-as-fp16 *layernorm* weights in those
+  same shards came back **all zeros** on disk (raw safetensors read confirms
+  `[0,0,0,0,0]`), and shard key-counts ballooned (476→2267). Root not fully chased;
+  treat per-shard `mx.save_safetensors` patching of these models as UNSAFE.
+- Additionally, the 2-bit (mixed) model was found to ALSO have pre-existing zeroed
+  layernorms from its original conversion (independent of the patch) and abnormal
+  sharding (one shard with 4039 keys). The 4-bit model's norms were clean until the
+  patch zeroed the touched shards.
+- **Decision:** discard the patch; re-run the full streaming conversion with the
+  fixed `dequant_tensor`, which yields correct routers AND correct norms in one pass.
+
+**Verification target after re-convert:** with the fixed converter + correct
+tokenizer.json, `What is 2+2?` (enable_thinking=False, 13-token prompt) must
+produce coherent text whose first token matches llama.cpp's 'The' (the pruned
+GGUF answers "The answer is 4."), not a digit-loop.

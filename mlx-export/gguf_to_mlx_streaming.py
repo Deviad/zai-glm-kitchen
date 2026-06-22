@@ -73,35 +73,37 @@ def combine_kv_b_3d(k_b: np.ndarray, v_b: np.ndarray) -> np.ndarray:
 # ─── per-tensor dequant (mirrors gguf2mlx's dequant switch) ───────────────────
 
 def dequant_tensor(tensor) -> np.ndarray:
-    """Dequantize a single GGUF tensor to fp16 numpy in HF layout [out, in]."""
+    """Dequantize a single GGUF tensor to fp16 numpy in HF layout [out, in].
+
+    IMPORTANT: gguf's GGUFReader exposes ``tensor.data`` ALREADY shaped as the
+    reversed logical shape — i.e. ``(out, in)`` for a 2D weight — which is
+    exactly the HF/PyTorch ``(out_features, in_features)`` convention and the
+    same layout ``gguf.dequantize`` returns for quantized blocks. We must NOT
+    ``.reshape(logical_shape)`` (that reinterprets ``(out, in)`` memory as
+    ``(in, out)`` and scrambles the values) and must NOT ``.T`` afterwards.
+
+    The historical reshape+transpose silently corrupted every 2D F32 tensor —
+    in GLM-5.2 that is the MoE router ``ffn_gate_inp.weight`` for every MoE
+    layer (L3..L65), which destroyed expert routing → near-uniform expert
+    selection → flat logits → gibberish generation. See GLM52_SESSION_MEMORY.md
+    "Bug: F32 2D router reshape+transpose".
+    """
     qtype_val = int(tensor.tensor_type)
     raw_data = tensor.data
-    logical_shape = tuple(tensor.shape)
 
     if qtype_val == 0:  # F32
-        arr = np.array(raw_data, dtype=np.float32).reshape(logical_shape)
-        if arr.ndim == 2:
-            arr = arr.T
-        return arr.astype(np.float16)
+        # raw_data is already (out, in) for 2D / (n,) for 1D — use as-is.
+        return np.array(raw_data, dtype=np.float32).astype(np.float16)
 
     elif qtype_val == 1:  # F16
-        arr = np.array(raw_data, dtype=np.float16).reshape(logical_shape)
-        if arr.ndim == 2:
-            arr = arr.T
-        return arr
+        return np.array(raw_data, dtype=np.float16)
 
     elif qtype_val == 28:  # F64
-        arr = np.array(raw_data, dtype=np.float64).reshape(logical_shape)
-        if arr.ndim == 2:
-            arr = arr.T
-        return arr.astype(np.float16)
+        return np.array(raw_data, dtype=np.float64).astype(np.float16)
 
     elif qtype_val in (24, 25, 26, 27):  # I8, I16, I32, I64
         int_map = {24: np.int8, 25: np.int16, 26: np.int32, 27: np.int64}
         arr = np.array(raw_data, dtype=int_map.get(qtype_val, np.int32))
-        arr = arr.reshape(logical_shape)
-        if arr.ndim == 2:
-            arr = arr.T
         return arr.astype(np.float16)
 
     else:
