@@ -175,7 +175,8 @@ class ShardWriter:
 
 # ─── main converter ───────────────────────────────────────────────────────────
 
-def convert_streaming(gguf_dir: str, output_dir: str, dry_run: int = 0):
+def convert_streaming(gguf_dir: str, output_dir: str, dry_run: int = 0,
+                      reference_tokenizer: Optional[str] = None):
     """Convert multi-shard GGUF → mixed-precision MLX. No fp16 intermediate."""
     gguf_dir = Path(gguf_dir)
     output_dir = Path(output_dir)
@@ -238,6 +239,22 @@ def convert_streaming(gguf_dir: str, output_dir: str, dry_run: int = 0):
     # ── Step 3: Extract tokenizer ──
     print("\n[2/4] Extracting tokenizer...")
     extract_tokenizer(reader_meta, output_dir, arch)
+    # The GGUF-derived tokenizer.json is INCOMPLETE for GLM-5.2: it carries only
+    # ~25 added_tokens and DROPS the special thinking/tool tokens (<think>=154841,
+    # </think>=154842, <tool_call>, ...). The model then ENCODES the literal text
+    # "<think></think>" as BPE pieces instead of the two atomic special tokens,
+    # corrupting the generation-start position. If a known-good reference
+    # tokenizer.json (original GLM-5.2 HF release / a prior good MLX export) is
+    # provided, copy it over the extracted one.
+    if reference_tokenizer:
+        import shutil
+        ref = Path(reference_tokenizer)
+        ref_json = ref / "tokenizer.json" if ref.is_dir() else ref
+        if ref_json.is_file():
+            shutil.copy(str(ref_json), str(output_dir / "tokenizer.json"))
+            print(f"    + overwrote tokenizer.json from reference: {ref_json}")
+        else:
+            print(f"    ! reference tokenizer not found: {ref_json} (kept GGUF one)")
 
     # ── Step 4: Stream tensors across all shards ──
     print(f"\n[3/4] Streaming + quantizing tensors{' (DRY RUN: first ' + str(dry_run) + ')' if dry_run else ''}...")
@@ -334,6 +351,30 @@ def convert_streaming(gguf_dir: str, output_dir: str, dry_run: int = 0):
     print("\n[4/4] Finalizing shards + index...")
     total_shards = writer.finalize()
 
+    # mlx-lm's deepseek_v32.sanitize() STACKS the per-expert linears
+    #   model.layers.N.mlp.experts.E.{gate,up,down}_proj
+    # into the single stacked module
+    #   model.layers.N.mlp.switch_mlp.{gate,up,down}_proj
+    # at load time. nn.quantize()'s class_predicate looks up the STACKED module
+    # path in config["quantization"]; if absent it falls back to the default
+    # bits (4), which mismatches 2-bit experts → shape error
+    #   expected (256,2048,768) got (256,2048,384).
+    # Mirror each layer's per-expert rule onto the stacked switch_mlp path.
+    _switch_added = 0
+    for _k, _v in list(quantization_block.items()):
+        _m = re.match(
+            r"(model\.layers\.\d+)\.mlp\.experts\.\d+\.(gate_proj|up_proj|down_proj)$",
+            _k,
+        )
+        if _m and isinstance(_v, dict):
+            _sm = f"{_m.group(1)}.mlp.switch_mlp.{_m.group(2)}"
+            if _sm not in quantization_block:
+                quantization_block[_sm] = _v
+                _switch_added += 1
+    if _switch_added:
+        print(f"    + added {_switch_added} switch_mlp quant entries "
+              f"(stacked-expert paths)")
+
     # Write config.json with quantization block
     config["quantization"] = quantization_block
     config["quantization_config"] = quantization_block
@@ -370,6 +411,12 @@ if __name__ == "__main__":
     parser.add_argument("--output", required=True, help="Output MLX directory")
     parser.add_argument("--dry-run", type=int, default=0,
                         help="Process only N tensors (for testing)")
+    parser.add_argument("--reference-tokenizer", default=None,
+                        help="Path to a known-good tokenizer.json (or a dir "
+                             "containing one) to copy over the GGUF-derived "
+                             "tokenizer. REQUIRED for GLM-5.2 so special "
+                             "<think>/</think>/tool tokens encode correctly.")
     args = parser.parse_args()
-    ok = convert_streaming(args.gguf_dir, args.output, dry_run=args.dry_run)
+    ok = convert_streaming(args.gguf_dir, args.output, dry_run=args.dry_run,
+                           reference_tokenizer=args.reference_tokenizer)
     sys.exit(0 if ok else 1)
