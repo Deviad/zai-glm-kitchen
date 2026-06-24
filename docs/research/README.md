@@ -11,12 +11,17 @@ paper's page 1.
 ## Why this folder exists
 
 Stock `mlx_lm` (`vendor/mlx-lm/mlx_lm/models/glm_moe_dsa.py` →
-`deepseek_v32.Model`) and stock `llama.cpp` (`vendor/llama.cpp` `glm-dsa.cpp:152`
-aliased to `deepseek32::graph`) **both run GLM-5.2 as plain MLA** — the DSA
-lightning indexer tensors are loaded into memory but never executed in the
-forward pass. The shortgpt-pruned GGUF carries 330 DSA indexer tensors across
-66 blocks; if a future task is "make GLM-5.2 actually do DSA correctly," these
-six papers are the mathematical ground truth for that work.
+`deepseek_v32.Model`) still runs GLM-5.2 as plain MLA — no IndexShare forward
+path. Stock `llama.cpp`'s `glm-dsa.cpp` is NO LONGER aliased to
+`deepseek32::graph`; as of 2026-06-23 it has its own DSA graph that DOES execute
+the lightning indexer + `ggml_top_k` on every layer (AC1/AC2/AC4-AC6 landed; see
+`PLAN.md` §7.L). The F/S IndexShare gating (AC3) is confirmed real upstream
+(`config.json`: `indexer_types[]` = 21 full / 57 shared) but deferred by design
+per `REMEDIATION_PLAN.md` §P0 (kernel-bound regression + baseline
+preservation). The known-good GGUF carries DSA indexer tensors on all 79 blocks
+(over-materialized; redundant compute, not a correctness bug). For the
+mathematical ground truth behind the F/S pattern and a future proper
+implementation, these six papers remain the reference.
 
 Cross-reference: `PLAN.md` §10 (research sources) and §7.M (mixed-precision MLX
 export story, AC7 = IndexShare load caveat), `REAP37_EXPERIMENTS.md` (the

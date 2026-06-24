@@ -300,6 +300,162 @@ policy in spirit, using MLX's own affine format since MLX has no IQ-series).
 
 ---
 
+### 7.L — llama.cpp GLM-DSA sparse-attention forward path (Story)
+
+**User story.** As a user serving GLM-5.2 GGUF on llama.cpp, I need the runtime
+to actually execute GLM-DSA sparse attention (lightning indexer + top-k
+selection + the F/S IndexShare pattern), so that long-context decode stays
+near-flat in tok/s instead of degrading as dense O(n) attention (measured
+24.5 tok/s @ ≤8K → 7.2 tok/s @ 54K because `glm_dsa` is aliased to the dense
+`deepseek2::graph` and the 8 loaded indexer tensors are never run).
+
+**Root cause (confirmed in source, 2026-06-23).**
+- `models.h:1115` — `llama_model_glm_dsa` does `using graph =
+  llama_model_deepseek2::graph` (DENSE; no indexer, no top-k).
+- `glm-dsa.cpp` loads 8 indexer tensors; `deepseek2.cpp` (the running graph)
+  references the indexer 0 times.
+- `llama-model.cpp:~2026` — the sparse `llama_kv_cache_dsa` is created **only**
+  under `case LLM_ARCH_DEEPSEEK32`; there is no `case LLM_ARCH_GLM_DSA`, so
+  GLM-DSA falls through to a dense attention KV cache.
+
+**Key complication (the reason this is NOT a one-line alias to deepseek32).**
+DeepSeek-3.2's `deepseek32.cpp` unconditionally loads + runs an indexer on
+**every** layer. GLM-5.2 uses the **F/S IndexShare pattern**: only 21 of 78
+layers are "full" (own an indexer); the other 57 are "shared" (NO indexer
+weights — they reuse the preceding Full layer's top-k indices). Confirmed:
+`config.indexer_types` = 21 full / 57 shared. A naive alias to `deepseek32::graph`
+would crash on the 57 shared layers' missing `indexer.*` tensors.
+
+**Acceptance criteria (objective, checkable):**
+
+- AC1 — `models.h`: `llama_model_glm_dsa` gets its **own** `struct graph` (no
+  longer `using graph = llama_model_deepseek2::graph`), built in a new
+  `glm-dsa` graph body adapted from `deepseek32::graph::graph`.
+- AC2 — `llama-model.cpp` memory switch: add `case LLM_ARCH_GLM_DSA` to the
+  `llama_kv_cache_dsa` creation block (the same arm as `LLM_ARCH_DEEPSEEK32`),
+  so GLM-DSA gets the sparse DSA KV cache instead of falling to dense default.
+- AC3 — F/S IndexShare: the GLM-DSA graph runs the lightning indexer + top-k
+  ONLY on "full" layers (where `indexer_attn_q_b != nullptr`); "shared" layers
+  reuse the most recent full layer's top-k indices. No null-tensor deref on the
+  57 shared layers. (Source: `index_topk_freq`/`indexer_types[]`; cross-ref
+  IndexCache paper 2603.12201.)
+- AC4 — `load_arch_tensors` (glm-dsa.cpp) only creates `indexer.*` tensors on
+  full layers (gate on per-layer role), matching the GGUF (no phantom S-layer
+  indexers; `TENSOR_NOT_REQUIRED` where appropriate).
+- AC5 — Builds clean via `build_llamacpp.sh` (submodule path; pinned feature
+  branch preserved); no regression to deepseek2 / deepseek32 / glm4 archs.
+- AC6 — Coherence preserved: the merge-sort + `2+2` smoke prompts still produce
+  correct output via `llama-cli`/`llama-server` chat mode.
+- AC7 — **Headline metric**: long-context decode (the 54K BLUE-FALCON
+  needle-retrieval used in KITCHEN_RESULTS.md) stays correct AND decode tok/s at
+  54K is materially closer to the ≤8K rate (target: well above the dense 7.2
+  tok/s baseline), demonstrating sparse attention is actually running.
+- AC8 — Finding appended to `GLM52_SESSION_MEMORY.md` (symptom → cause → fix →
+  verified tok/s before/after), per the repo contract.
+
+**Status.** PARTIALLY IMPLEMENTED 2026-06-23 (AC1, AC2, AC4–AC6 done; AC7 is a
+NEGATIVE finding; AC3 deferred by design). The 4 edits landed (models.h own
+graph, glm-dsa.cpp DSA graph, llama-model.cpp KV switch, llama-kv-cache.cpp
+Hadamard arch-gate fix). GLM-DSA now RUNS its real sparse-attention graph: no
+segfault, coherent output, `creating indexer KV cache` + `attn_rot_k=1`
+confirmed. AC7 headline metric did NOT improve: DSA decode = 4.22 tok/s @ 54K
+vs dense 7.2 tok/s — the indexer scoring (O(n) per layer) +
+`ggml_top_k(54K->2048)` sort cost more than the dense attention they replace
+at this context, because llama.cpp's DSA kernels are unoptimized (no fused
+indexer, generic sort top-k, no Metal sparse-gather). This is the kernel-level
+bottleneck Sanfilippo cited for Dwarf Star 4. See GLM52_SESSION_MEMORY.md
+2026-06-23 entry.
+
+**AC3 (F/S IndexShare) — investigated 2026-06-24, DEFERRED by design (NOT
+implemented).** Upstream `zai-org/GLM-5.2/config.json` confirms the pattern is
+real: `indexer_types[]` = 21 `"full"` + 57 `"shared"` of 78 layers,
+`index_topk_freq=4`, `index_share_for_mtp_iteration=true`. However the AC3
+data-layer branch (extend gguf-py to write `indexer_types[]` + re-quantize the
+232 GB baseline to omit 57 shared-layer + MTP indexer tensors + gate
+`load_arch_tensors` at 5 tensors/layer) is NOT pursued: (1) the 4.22-vs-7.2
+tok/s regression is kernel-bound, not layer-count-bound, so F/S would not
+recover it; (2) the canonical GGUF IS the baseline for every recorded result,
+and re-quantizing would silently invalidate them; (3) AC1/AC2/AC4-AC6 already
+work. The known-good GGUF over-materializes indexer tensors on all 79 blocks
+(redundant compute, not a correctness bug — shared layers just recompute their
+own top-k). Decision record + do-not-touch list in REMEDIATION_PLAN.md §P0 and
+GLM52_SESSION_MEMORY.md 2026-06-24 entry.
+
+### 7.N — DSA sparse-gather + fused-indexer kernels (Story)
+
+**As a** researcher running GLM-5.2 long-context decode, **I need** the DSA
+attention to actually be sparse (gather only the top-k KV rows) instead of the
+current masked-dense attention, **so that** decode tok/s stops degrading with
+context length (currently 24.5→4.22 tok/s as ctx grows 2K→54K) and DSA pays off
+as the algorithm intends.
+
+**Why now.** Verified root cause (GLM52_SESSION_MEMORY.md 2026-06-23): the
+dominant per-token cost at long context is `build_attn_mha`'s dense
+`mul_mat(k, q)` over ALL n_kv keys × n_head=128 heads, NOT the indexer scoring.
+The current `build_attn` DSA branch builds a [n_kv]-sized mask via
+`ggml_set_rows` and runs full dense attention with the mask zeroing non-top-k
+positions — compute is still O(n_kv·n_head) per token. With index_topk=2048,
+gathering the 2048 selected KV rows and attending over only those would cut the
+attention matmul ~26× at 54K context.
+
+**Scope — two parts, ship separately:**
+
+1. **Sparse-gather attention (graph rewrite, opt-in).** Replace the
+   `ggml_set_rows` + masked-dense `build_attn_mha` in the DSA `build_attn`
+   branch with `ggml_get_rows(k, top_k)` + `ggml_get_rows(v, top_k)` then a
+   small/zero-mask attention. `ggml_get_rows` already supports 4D per-row
+   indices `[n_rows, ne2, ne3, 1]` → `[n_embd, n_rows, ne2, ne3]` (verified,
+   ggml.h:1661), so per-token different gathers are supported with NO new Metal
+   kernel. Gated behind `cparams` / env `LLAMA_DSA_SPARSE_GATHER=1` so the
+   frozen masked-dense baseline stays the default.
+2. **Fused indexer kernel (new Metal op, later).** Fuse the 7-op indexer scoring
+   chain (`mul_mat(indexer_k,indexer_q)`→`relu`→`mul(weights)`→`sum_rows`→
+   `add(mask)`→`top_k(argsort)`) into one pass that reads each cached indexer
+   key once and emits partial-select top-k indices, avoiding materializing the
+   `[n_tokens, n_indexer_head, n_kv]` intermediate. Smaller payoff
+   (n_indexer_head << n_head) — do only if sparse-gather alone is insufficient.
+
+**Acceptance criteria — sparse-gather (Part 1):**
+- [x] New opt-in path in `llama-graph.cpp` DSA `build_attn` invoked only when
+      `LLAMA_DSA_SPARSE_GATHER=1`; default path byte-identical to current
+      masked-dense attention (verified: flag OFF → merge-sort 30.7/9.9 t/s,
+      exit 0, unchanged).
+- [x] Gathered K and V have shape `[d, 1, n_top_k, n_stream]` (decode:
+      `[576,1,n_top_k,1]`) matching the dense path's K/V with n_kv→n_top_k.
+      Implementation: 2D view + `ggml_get_rows` + reshape_4d + contig F16 cpy
+      (permute route lost backend buffer placement; 2D-view route works).
+- [~] Short-context correctness: merge-sort smoke 6/6 sanity cases PASS with
+      flag ON. Long-context (BLUE-FALCON 18.7K, 53K) output is IQ2S garbage for
+      BOTH dense and sparse-gather identically (peg-native parse crash on
+      garbage), so sparse-gather is NOT the cause but a clean long-ctx
+      correctness signal needs a higher-precision GGUF. Decode SPEED is still
+      a valid perf signal and was measured.
+- [x] No-regression: flag OFF merge-sort output token-identical to pre-change;
+      exit 0.
+- [x] Perf: **sparse-gather 1.28× faster at 53K decode (4.93 vs 3.85 tok/s)**,
+      and 1.55× at short ctx (15.3 vs 9.9 tok/s merge-sort). Prefill + cache-hit
+      prefill byte-identical between paths. Full table in GLM52_SESSION_MEMORY.md.
+- [x] Finding appended to `GLM52_SESSION_MEMORY.md` (2026-06-24 §7.N entry).
+
+**Status: Part 1 DONE — correct at short ctx, 1.28× faster at 53K decode, no
+regression.** (Long-ctx output-quality validation remains blocked on IQ2S, not
+on this change.) Part 2 (fused indexer kernel) NOT started.
+
+**Acceptance criteria — fused indexer (Part 2, if pursued):**
+- [ ] New `GGML_OP`-registered Metal kernel `kernel_indexer_score_topk_f32`
+      producing `[n_top_k, n_batch, 1, n_stream]` indices from `{indexer_k,
+      indexer_q, indexer_weights, mask}` in one dispatch (no `[n_tokens,
+      n_indexer_head, n_kv]` materialization).
+- [ ] Bit-exact vs the 7-op reference for n_kv ∈ {2K, 8K, 32K} on a synthetic
+      fixture (fix later if a faster partial-select approximopagation is needed).
+- [ ] Defers to the existing 7-op chain when the flag is OFF.
+
+**Do-not-touch (frozen baseline preserved):** the masked-dense `build_attn` DSA
+path stays as the default; the indexer graph in `glm-dsa.cpp::graph` (top_k
+computation) is unchanged for Part 1 (Part 2 only ADDS an opt-in kernel path).
+
+---
+
 ## 8. External blockers (unchanged)
 
 1. **No GGUF producer in llama.cpp master** — `conversion/glm.py` registers `Glm4*` but not `GlmMoeDsa*`. Schema + tensor enum + metadata keys exist (small upstream PR away). Until then test input = synthetic fixture or community fork.

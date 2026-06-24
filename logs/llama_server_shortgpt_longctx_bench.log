@@ -1,0 +1,143 @@
+0.00.044.289 I log_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.044.291 I device_info:
+0.00.044.297 I   - MTL0    : Apple M3 Ultra (458752 MiB, 458751 MiB free)
+0.00.044.297 I   - BLAS    : Accelerate (0 MiB, 0 MiB free)
+0.00.044.305 I   - CPU     : Apple M3 Ultra (524288 MiB, 524288 MiB free)
+0.00.044.316 I system_info: n_threads = 8 (n_threads_batch = 8) / 32 | MTL : EMBED_LIBRARY = 1 | CPU : NEON = 1 | ARM_FMA = 1 | FP16_VA = 1 | MATMUL_INT8 = 1 | DOTPROD = 1 | ACCELERATE = 1 | REPACK = 1 | 
+0.00.044.329 I srv          init: running without SSL
+0.00.044.363 I srv          init: using 31 threads for HTTP server
+0.00.044.475 I srv         start: binding port with default address family
+0.00.045.827 I srv  llama_server: loading model
+0.00.045.835 I srv    load_model: loading model '/Volumes/Data NVME/GLM-5.2-GGUF/GLM-5.2-shortgpt-pruned-IQ2S-experts-IQ4NL-rest/GLM-5.2-shortgpt-pruned-IQ2_S-IQ4_NL-00001-of-00009.gguf'
+0.00.045.856 I common_init_result: fitting params to device memory ...
+0.00.045.857 I common_init_result: (for bugs during this step try to reproduce them with -fit off, or provide --verbose logs if the bug only occurs with -fit on)
+0.00.426.506 W load: special_eot_id is not in special_eog_ids - the tokenizer config may be incorrect
+0.00.426.512 W load: special_eom_id is not in special_eog_ids - the tokenizer config may be incorrect
+1.05.215.754 W llama_context: n_ctx_seq (100096) < n_ctx_train (1048576) -- the full capacity of the model will not be utilized
+1.06.000.890 I srv    load_model: initializing slots, n_slots = 1
+1.06.211.829 W common_speculative_init: no implementations specified for speculative decoding
+1.06.211.833 I slot   load_model: id  0 | task -1 | new slot, n_ctx = 100096
+1.06.211.865 I srv    load_model: prompt cache is enabled, size limit: 8192 MiB
+1.06.211.866 I srv    load_model: use `--cache-ram 0` to disable the prompt cache
+1.06.211.866 I srv    load_model: for more info see https://github.com/ggml-org/llama.cpp/pull/16391
+1.06.211.866 I srv    load_model: context checkpoints enabled, max = 32, min spacing = 256
+1.06.211.892 I srv          init: idle slots will be saved to prompt cache upon starting a new task
+1.06.223.836 I init: chat template, example_format: '[gMASK]<sop><|system|>Reasoning Effort: Max<|system|>You are a helpful assistant<|user|>Hello<|assistant|><think></think>Hi there<|user|>How are you?<|assistant|><think>'
+1.06.232.546 I srv          init: init: chat template, thinking = 1
+1.06.232.558 I srv  llama_server: model loaded
+1.06.232.560 I srv  llama_server: server is listening on http://127.0.0.1:8081
+1.06.232.569 I srv  update_slots: all slots are idle
+1.11.673.854 I srv    operator(): Chat format: peg-native
+1.11.673.960 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+1.11.673.961 I srv  get_availabl: updating prompt cache
+1.11.673.967 I srv          load:  - looking for better prompt, base f_keep = -1.000, sim = 0.000
+1.11.673.968 I srv        update:  - cache state: 0 prompts, 0.000 MiB (limits: 8192.000 MiB, 100096 tokens, 8589934592 est)
+1.11.673.968 I srv  get_availabl: prompt cache update took 0.01 ms
+1.11.674.009 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+1.26.175.779 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   2057, progress = 0.04, t =  14.50 s / 141.84 tokens per second
+1.44.451.902 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   4105, progress = 0.08, t =  32.78 s / 125.24 tokens per second
+2.06.211.505 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   6153, progress = 0.11, t =  54.54 s / 112.82 tokens per second
+2.32.004.051 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   8201, progress = 0.15, t =  80.33 s / 102.09 tokens per second
+3.01.913.678 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  10249, progress = 0.19, t = 110.24 s / 92.97 tokens per second
+3.35.640.382 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  12297, progress = 0.23, t = 143.97 s / 85.42 tokens per second
+4.13.472.500 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  14345, progress = 0.27, t = 181.80 s / 78.91 tokens per second
+4.54.948.413 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  16393, progress = 0.31, t = 223.27 s / 73.42 tokens per second
+5.40.597.760 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  18441, progress = 0.34, t = 268.92 s / 68.57 tokens per second
+6.30.168.785 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  20489, progress = 0.38, t = 318.49 s / 64.33 tokens per second
+7.23.632.696 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  22537, progress = 0.42, t = 371.96 s / 60.59 tokens per second
+8.20.119.669 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  24585, progress = 0.46, t = 428.45 s / 57.38 tokens per second
+9.19.690.727 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  26633, progress = 0.50, t = 488.02 s / 54.57 tokens per second
+10.22.450.599 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  28681, progress = 0.53, t = 550.78 s / 52.07 tokens per second
+11.28.779.603 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  30729, progress = 0.57, t = 617.11 s / 49.80 tokens per second
+12.39.108.480 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  32777, progress = 0.61, t = 687.43 s / 47.68 tokens per second
+13.52.576.047 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  34825, progress = 0.65, t = 760.90 s / 45.77 tokens per second
+15.08.626.194 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  36873, progress = 0.69, t = 836.95 s / 44.06 tokens per second
+16.27.943.799 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  38921, progress = 0.73, t = 916.27 s / 42.48 tokens per second
+17.50.424.589 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  40969, progress = 0.76, t = 998.75 s / 41.02 tokens per second
+19.16.066.594 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  43017, progress = 0.80, t = 1084.39 s / 39.67 tokens per second
+20.45.164.090 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  45065, progress = 0.84, t = 1173.49 s / 38.40 tokens per second
+22.17.449.565 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  47113, progress = 0.88, t = 1265.78 s / 37.22 tokens per second
+23.52.833.189 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  49161, progress = 0.92, t = 1361.16 s / 36.12 tokens per second
+25.32.145.983 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  51209, progress = 0.95, t = 1460.47 s / 35.06 tokens per second
+27.14.698.890 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  53257, progress = 0.99, t = 1563.02 s / 34.07 tokens per second
+27.57.650.204 I slot print_timing: id  0 | task 0 | n_decoded =    100, tg =   4.61 t/s, tg_3s =   4.61 t/s
+28.00.742.235 I slot print_timing: id  0 | task 0 | n_decoded =    114, tg =   4.60 t/s, tg_3s =   4.53 t/s
+28.03.835.828 I slot print_timing: id  0 | task 0 | n_decoded =    128, tg =   4.59 t/s, tg_3s =   4.53 t/s
+28.06.904.746 I slot print_timing: id  0 | task 0 | n_decoded =    142, tg =   4.59 t/s, tg_3s =   4.56 t/s
+28.09.965.205 I slot print_timing: id  0 | task 0 | n_decoded =    156, tg =   4.59 t/s, tg_3s =   4.57 t/s
+28.13.033.530 I slot print_timing: id  0 | task 0 | n_decoded =    170, tg =   4.58 t/s, tg_3s =   4.56 t/s
+28.16.114.803 I slot print_timing: id  0 | task 0 | n_decoded =    184, tg =   4.58 t/s, tg_3s =   4.54 t/s
+28.19.194.514 I slot print_timing: id  0 | task 0 | n_decoded =    198, tg =   4.58 t/s, tg_3s =   4.55 t/s
+28.22.292.804 I slot print_timing: id  0 | task 0 | n_decoded =    212, tg =   4.57 t/s, tg_3s =   4.52 t/s
+28.25.373.478 I slot print_timing: id  0 | task 0 | n_decoded =    226, tg =   4.57 t/s, tg_3s =   4.54 t/s
+28.28.446.772 I slot print_timing: id  0 | task 0 | n_decoded =    240, tg =   4.57 t/s, tg_3s =   4.56 t/s
+28.31.529.086 I slot print_timing: id  0 | task 0 | n_decoded =    254, tg =   4.57 t/s, tg_3s =   4.54 t/s
+28.34.628.624 I slot print_timing: id  0 | task 0 | n_decoded =    268, tg =   4.57 t/s, tg_3s =   4.52 t/s
+28.37.740.238 I slot print_timing: id  0 | task 0 | n_decoded =    282, tg =   4.56 t/s, tg_3s =   4.50 t/s
+28.40.863.502 I slot print_timing: id  0 | task 0 | n_decoded =    296, tg =   4.56 t/s, tg_3s =   4.48 t/s
+28.43.972.575 I slot print_timing: id  0 | task 0 | n_decoded =    310, tg =   4.56 t/s, tg_3s =   4.50 t/s
+28.47.033.589 I slot print_timing: id  0 | task 0 | n_decoded =    324, tg =   4.56 t/s, tg_3s =   4.57 t/s
+28.50.096.624 I slot print_timing: id  0 | task 0 | n_decoded =    338, tg =   4.56 t/s, tg_3s =   4.57 t/s
+28.53.171.929 I slot print_timing: id  0 | task 0 | n_decoded =    352, tg =   4.56 t/s, tg_3s =   4.55 t/s
+28.56.256.216 I slot print_timing: id  0 | task 0 | n_decoded =    366, tg =   4.56 t/s, tg_3s =   4.54 t/s
+28.59.325.104 I slot print_timing: id  0 | task 0 | n_decoded =    380, tg =   4.56 t/s, tg_3s =   4.56 t/s
+29.00.208.685 I slot print_timing: id  0 | task 0 | prompt eval time = 1584270.88 ms / 53655 tokens (   29.53 ms per token,    33.87 tokens per second)
+29.00.208.688 I slot print_timing: id  0 | task 0 |        eval time =   84263.78 ms /   384 tokens (  219.44 ms per token,     4.56 tokens per second)
+29.00.208.689 I slot print_timing: id  0 | task 0 |       total time = 1668534.66 ms / 54039 tokens
+29.00.208.689 I slot print_timing: id  0 | task 0 |    graphs reused =        380
+29.00.210.403 I slot      release: id  0 | task 0 | stop processing: n_tokens = 54038, truncated = 0
+29.00.210.410 I srv  update_slots: all slots are idle
+29.00.210.429 W common_chat_peg_parse: unparsed peg-native output: <think> }1###0291TheÃ:https. #:5``
+}### platform.}...ark
+. in.###01115106}g} According:6
+0 ..08:11.)1p1arkopartp01 :. 100...213.1}uÃ... .0100###6 ...p01.0| database...â8 ...}} [}1 |0.}....34 r�0https51Ã...011o1    ...:35etwork (``0.# .11 etc:1 (}2.ops }" Ã514265... 2.1  1   acep}...0}...0
+ [1
+
+ 
+1.11| [1:31u0}:a1.}
+1 1 } .0Г10  129:u...}...11...1 keyboard### 1} Г0}....}: :â{""2 .2p1 2... }.:1 Section0...https3markdown .2:borg01.20.07 2  or0...22220e......0 [.01}2:0...........:01.0.5... |10 :}    |  013p61https}1Ã} #}20d}201##... The2...5.aThe #1#https0}:}
+0
+2. [
+1etwork 011 1:ą|} database#1 
+29.00.210.491 W srv          stop: cancel task, id_task = 0
+29.00.210.502 I srv  update_slots: all slots are idle
+29.00.210.666 W srv    operator(): got exception: {"error":{"code":500,"message":"The model produced output that does not match the expected peg-native format","type":"server_error"}}
+29.00.275.025 I srv    operator(): Chat format: peg-native
+29.00.275.140 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 1.000 (> 0.100 thold), f_keep = 0.993
+29.00.275.190 I slot launch_slot_: id  0 | task 413 | processing task, is_child = 0
+29.23.226.703 I slot print_timing: id  0 | task 413 | n_decoded =    100, tg =   4.62 t/s, tg_3s =   4.62 t/s
+29.26.293.678 I slot print_timing: id  0 | task 413 | n_decoded =    114, tg =   4.62 t/s, tg_3s =   4.56 t/s
+29.29.377.155 I slot print_timing: id  0 | task 413 | n_decoded =    128, tg =   4.61 t/s, tg_3s =   4.54 t/s
+29.32.440.895 I slot print_timing: id  0 | task 413 | n_decoded =    142, tg =   4.60 t/s, tg_3s =   4.57 t/s
+29.35.503.403 I slot print_timing: id  0 | task 413 | n_decoded =    156, tg =   4.60 t/s, tg_3s =   4.57 t/s
+29.38.567.079 I slot print_timing: id  0 | task 413 | n_decoded =    170, tg =   4.60 t/s, tg_3s =   4.57 t/s
+29.41.633.050 I slot print_timing: id  0 | task 413 | n_decoded =    184, tg =   4.60 t/s, tg_3s =   4.57 t/s
+29.44.707.476 I slot print_timing: id  0 | task 413 | n_decoded =    198, tg =   4.59 t/s, tg_3s =   4.55 t/s
+29.47.766.099 I slot print_timing: id  0 | task 413 | n_decoded =    212, tg =   4.59 t/s, tg_3s =   4.58 t/s
+29.50.822.821 I slot print_timing: id  0 | task 413 | n_decoded =    226, tg =   4.59 t/s, tg_3s =   4.58 t/s
+29.53.881.390 I slot print_timing: id  0 | task 413 | n_decoded =    240, tg =   4.59 t/s, tg_3s =   4.58 t/s
+29.56.946.319 I slot print_timing: id  0 | task 413 | n_decoded =    254, tg =   4.59 t/s, tg_3s =   4.57 t/s
+30.00.022.403 I slot print_timing: id  0 | task 413 | n_decoded =    268, tg =   4.59 t/s, tg_3s =   4.55 t/s
+30.03.110.017 I slot print_timing: id  0 | task 413 | n_decoded =    282, tg =   4.58 t/s, tg_3s =   4.53 t/s
+30.06.204.288 I slot print_timing: id  0 | task 413 | n_decoded =    296, tg =   4.58 t/s, tg_3s =   4.52 t/s
+30.09.270.886 I slot print_timing: id  0 | task 413 | n_decoded =    310, tg =   4.58 t/s, tg_3s =   4.57 t/s
+30.12.339.610 I slot print_timing: id  0 | task 413 | n_decoded =    324, tg =   4.58 t/s, tg_3s =   4.56 t/s
+30.15.406.841 I slot print_timing: id  0 | task 413 | n_decoded =    338, tg =   4.58 t/s, tg_3s =   4.56 t/s
+30.18.480.198 I slot print_timing: id  0 | task 413 | n_decoded =    352, tg =   4.58 t/s, tg_3s =   4.56 t/s
+30.18.918.587 I slot print_timing: id  0 | task 413 | prompt eval time =    1316.48 ms /    16 tokens (   82.28 ms per token,    12.15 tokens per second)
+30.18.918.591 I slot print_timing: id  0 | task 413 |        eval time =   77326.91 ms /   354 tokens (  218.44 ms per token,     4.58 tokens per second)
+30.18.918.592 I slot print_timing: id  0 | task 413 |       total time =   78643.39 ms /   370 tokens
+30.18.918.592 I slot print_timing: id  0 | task 413 |    graphs reused =        731
+30.18.920.337 I slot      release: id  0 | task 413 | stop processing: n_tokens = 54008, truncated = 0
+30.18.920.345 I srv  update_slots: all slots are idle
+30.18.920.359 W common_chat_peg_parse: unparsed peg-native output: 1 .....}0} -1601.  ...:
+ �.02....: U..:10 k2.##:
+0|u
+050##0}0ck|11....a 2...0....0...0  : 1 ###u1 browser  .##Ã0. 0   01...Ã.100...... c0.0#2 Г{......###260.1 (:260.2.102.ark1} podcast 515:u�5.0: ...0 [...19:....0 2...0 |...2124000 inp002.|0 u.A.a: 0 :0p0.......{.##0 |.httpsn1 ...6}2::...1### markdown
+...Ã: 2 }}}...0..1}  -.3
+###:...0: 2|3123.2..20... ######34
+}etwork:
+30.18.920.395 W srv          stop: cancel task, id_task = 413
+30.18.920.407 I srv  update_slots: all slots are idle
+30.18.920.422 W srv    operator(): got exception: {"error":{"code":500,"message":"The model produced output that does not match the expected peg-native format","type":"server_error"}}
+30.37.451.554 I srv    operator(): operator(): cleaning up before exit...

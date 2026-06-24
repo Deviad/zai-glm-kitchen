@@ -8,16 +8,16 @@ Phase 1 (MoE expert routing tracer) is **implemented** and verified end-to-end
 against the known-good mixed GGUF baseline. Artifacts:
 
 ```text
-src/gguf2mlx/tracing/          # schema + async writer + analyzer + comparator + synth
+glm52_kitchen/tracing/          # schema + async writer + analyzer + comparator + synth
 tests/test_tracing_schema_writer.py
 tests/test_tracing_analyze.py
-scripts/tracing/run_glm52_moe_trace.sh       # single-prompt live traced run
-scripts/tracing/run_trace_task_suite.sh      # multilingual smoke-suite traced run
-scripts/tracing/analyze_moe_trace.py         # JSONL -> markdown report + summary
-scripts/tracing/compare_trace_reports.py     # side-by-side model/run comparison
-scripts/tracing/make_synth_trace.py          # synthetic traces for tests/demo
-traces/README.md                              # schema, paths, run lifecycle
-~/projects/llama.cpp/examples/trace-moe/      # C++ backend (cb_eval on ffn_moe_topk/weights)
+common/scripts/run_glm52_moe_trace.sh       # single-prompt live traced run
+common/scripts/run_trace_task_suite.sh      # multilingual smoke-suite traced run
+common/scripts/analyze_moe_trace.py         # JSONL -> markdown report + summary
+common/scripts/compare_trace_reports.py     # side-by-side model/run comparison
+common/scripts/make_synth_trace.py          # synthetic traces for tests/demo
+common/traces/README.md                              # schema, paths, run lifecycle
+vendor/llama.cpp/examples/trace-moe/      # C++ backend (cb_eval on ffn_moe_topk/weights)
 ```
 
 Verified real-data run on the mixed GLM-5.2 model produced 32 schema-valid
@@ -191,18 +191,18 @@ This converts correlation into stronger causal evidence.
 ## Planned artifacts
 
 ```text
-scripts/tracing/run_glm52_moe_trace.sh
-scripts/tracing/run_trace_task_suite.sh
-scripts/tracing/analyze_moe_trace.py
-scripts/tracing/compare_trace_reports.py
-traces/README.md
-reports/glm52_moe_trace_report.md
+common/scripts/run_glm52_moe_trace.sh
+common/scripts/run_trace_task_suite.sh
+common/scripts/analyze_moe_trace.py
+common/scripts/compare_trace_reports.py
+common/traces/README.md
+common/reports/glm52_moe_trace_report.md
 ```
 
 Potential llama.cpp changes:
 
 ```text
-/Users/spotted/projects/llama.cpp/examples/trace-moe/...
+vendor/llama.cpp/examples/trace-moe/...
 ```
 
 or a patch to `llama-cli` with a flag such as:
@@ -317,7 +317,7 @@ Acceptance criteria:
 - ✅ The trace includes task label, token index, layer, selected expert IDs, and expert weights. (Schema fields `task_label`, `token_index`, `layer`, `experts`, `weights`.)
 - ✅ Tracing is opt-in and normal inference works unchanged when tracing is disabled. (`--trace-out` is required; without it, the binary refuses to start. No `--trace-*` flags → standard llama.cpp inference.)
 - ✅ The trace script works with the current known-good mixed GGUF baseline. (Verified against 232GB GLM-5.2-mixed-IQ2S-experts-IQ4NL-rest.)
-- ✅ The trace does not overwrite existing baseline output files. (Output paths default to timestamped: `traces/glm52-<task>-<lang>-<test_id>-<YYYYMMDD-HHMMSS>.jsonl`; the writer refuses to overwrite. Baseline scripts live in `scripts/baselines/` and output to separate `outputs/` paths.)
+- ✅ The trace does not overwrite existing baseline output files. (Output paths default to timestamped: `common/traces/glm52-<task>-<lang>-<test_id>-<YYYYMMDD-HHMMSS>.jsonl`; the writer refuses to overwrite. Baseline scripts live in `common/baselines/` and output to separate `outputs/` paths.)
 
 ### Story 2 — Researcher compares task-specific expert usage
 
@@ -354,7 +354,7 @@ Acceptance criteria:
 - ✅ Unit or integration tests verify that `ffn_moe_topk` extraction returns integer expert IDs. (`tests/test_tracing_schema_writer.py` `TestSchema.test_from_dict_coerces_types` asserts `experts == [1, 2, 3]` from raw JSON.)
 - ✅ Tests verify that `ffn_moe_weights` extraction returns the expected shape: `[n_expert_used, n_tokens]` or equivalent normalized output. (`test_weights_length_mismatch_raises` + `test_empty_experts_raises` enforce `len(experts) == len(weights)`; the C++ tracer uses topk's `n_used` for both tensors — Bug 2 fix.)
 - ✅ Tests run on a tiny or synthetic MoE model if possible. (Schema/writer/analyze tests run on synthetic JSONL records — no MoE model load needed. `make_synth_trace.py` produces 161 synthetic traces for end-to-end pipeline verification.)
-- ✅ If a full GLM-5.2 run is required, it is marked as an optional/manual integration test. (No test in the pytest suite loads GLM-5.2; the real-model smoke tests are run manually via `scripts/tracing/run_glm52_moe_trace.sh` and `run_trace_suite_batched.sh`, gated on the 26 GB GGUF being present.)
+- ✅ If a full GLM-5.2 run is required, it is marked as an optional/manual integration test. (No test in the pytest suite loads GLM-5.2; the real-model smoke tests are run manually via `common/scripts/run_glm52_moe_trace.sh` and `run_trace_suite_batched.sh`, gated on the 26 GB GGUF being present.)
 - ✅ The tracer fails with a clear error if an expected tensor is missing. (`trace_cb_eval` verifies `ggml_nelements(topk) > 0` and matches `n_used` from topk to weights; mismatches are skipped. `--trace-out` missing → exits with code 2. Both `-p` and `-f` missing → exits with code 2 with a clear error message.)
 
 ### Story 5 — Documentation reader traces long-context retrieval behavior
@@ -363,8 +363,8 @@ Acceptance criteria:
 
 Acceptance criteria:
 
-- ✅ The DSA trace records selected context positions or position buckets for traced layers. (DONE 2026-06-20 — RE-SCOPED to MLA retrieval patterns after the DSA forward-path patch was empirically rejected. The C++ tracer captures `q_nope_absorbed` (absorbed query — what each gen-step token asks for) and `kv_cmpr` (lora-compressed KV — what each prefill token offers) per (token, layer) via existing `--trace-activations q_nope_absorbed,kv_cmpr`. New analyzer module `src/gguf2mlx/tracing/retrieval.py` computes per-(query, layer) top-N retrieved prefill positions via signed top-K channel overlap (Σ over shared channels of q·c × k·c). Real-model long-ctx run on the BLUE-FALCON-48217 retrieval prompt (18,745 prefill tokens, 24 gen tokens, stride=8, topk=20) → 240 (query, layer) pairs scored, distance-bucketed, sentinel-overlapped via `--sentinel-position-range`. Full pipeline: `analyze_moe_trace.py --retrieval-stems q_nope_absorbed,kv_cmpr --retrieval-topn 10 --sentinel-position-range 50,60`. See `GLM52_SESSION_MEMORY.md` → "Story 5 re-scoped to MLA retrieval patterns — IMPLEMENTED" for full design + results.)
-- ✅ The analyzer reports distance buckets such as recent, medium-context, and far-context retrieval. (DONE 2026-06-20. Analyzer module `src/gguf2mlx/tracing/retrieval.py` calls `distance_bucket(query_pos, retrieved_pos, prompt_len)` for every retrieved position, mapping to buckets: recent (≤5% of prompt_len or ≤64 tokens), medium (5%-30%), far (30%-70%), very_far (>70% — start of prompt), future (defensive: retrieved_pos ≥ query_pos). Summary dict carries `bucket_counts` + `bucket_fractions`. Report renders the '### Distance buckets' table. Real-model long-ctx run: 47 recent (2.0%), 2353 very_far (98.0%) — strongly skewed to 'start of prompt' which matches the BLUE-FALCON task's 'sentinel from near the beginning' instruction.)
+- ✅ The DSA trace records selected context positions or position buckets for traced layers. (DONE 2026-06-20 — RE-SCOPED to MLA retrieval patterns after the DSA forward-path patch was empirically rejected. The C++ tracer captures `q_nope_absorbed` (absorbed query — what each gen-step token asks for) and `kv_cmpr` (lora-compressed KV — what each prefill token offers) per (token, layer) via existing `--trace-activations q_nope_absorbed,kv_cmpr`. New analyzer module `glm52_kitchen/tracing/retrieval.py` computes per-(query, layer) top-N retrieved prefill positions via signed top-K channel overlap (Σ over shared channels of q·c × k·c). Real-model long-ctx run on the BLUE-FALCON-48217 retrieval prompt (18,745 prefill tokens, 24 gen tokens, stride=8, topk=20) → 240 (query, layer) pairs scored, distance-bucketed, sentinel-overlapped via `--sentinel-position-range`. Full pipeline: `analyze_moe_trace.py --retrieval-stems q_nope_absorbed,kv_cmpr --retrieval-topn 10 --sentinel-position-range 50,60`. See `GLM52_SESSION_MEMORY.md` → "Story 5 re-scoped to MLA retrieval patterns — IMPLEMENTED" for full design + results.)
+- ✅ The analyzer reports distance buckets such as recent, medium-context, and far-context retrieval. (DONE 2026-06-20. Analyzer module `glm52_kitchen/tracing/retrieval.py` calls `distance_bucket(query_pos, retrieved_pos, prompt_len)` for every retrieved position, mapping to buckets: recent (≤5% of prompt_len or ≤64 tokens), medium (5%-30%), far (30%-70%), very_far (>70% — start of prompt), future (defensive: retrieved_pos ≥ query_pos). Summary dict carries `bucket_counts` + `bucket_fractions`. Report renders the '### Distance buckets' table. Real-model long-ctx run: 47 recent (2.0%), 2353 very_far (98.0%) — strongly skewed to 'start of prompt' which matches the BLUE-FALCON task's 'sentinel from near the beginning' instruction.)
 - ✅ The report can show whether the sentinel section in the long-context retrieval prompt was selected. (DONE 2026-06-20. Analyzer accepts `--sentinel-position-range START,END` (inclusive) and counts `sentinel_hits` / `sentinel_total` — fraction of (query, layer) pairs whose top-N retrieved positions included ≥1 position in the sentinel range. Summary dict carries `sentinel_hits`, `sentinel_total`, `sentinel_hit_rate`. Report renders the '### Sentinel section retrieval' subsection. Real-model long-ctx BLUE-FALCON run with sentinel_range=(50,60) → 17.5% hit rate (42 / 240 (query, layer) pairs). Chance baseline: 1 - (1 - 11/18745)^10 ≈ 0.59% — the model retrieves sentinel token positions ~30x more often than chance. Direct hit example: layer 56 query 18768's TOP-1 retrieved position = 57 (inside the sentinel range), score 7.770, 5 shared channels.)
 - ✅ DSA tracing can be disabled independently from MoE tracing. (DONE 2026-06-20 via the re-scoped design: the MLA retrieval analyzer is GATED by `--retrieval-stems q,k` on `analyze_moe_trace.py` (off by default — no overhead when not requested) AND by `--trace-activations q_nope_absorbed,kv_cmpr` on the C++ tracer (off by default — option `TraceConfig::activation_stems.empty()` check returns early, no activation records emitted). Both gates are independent from the existing `--trace-moe` / `--trace-max-tokens` flags. The C++ activation path also gates per-layer via `--trace-activation-stride N` (only every Nth layer emits activation records) and per-token via `--trace-max-tokens` (shared with MoE routing). Verified: real-model smoke 1 (no flags) → 0 activation records, only MoE routing records; real-model smoke 2 (with `--trace-activations q_nope_absorbed,kv_cmpr --trace-activation-topk 5`) → emits both record types.)
 - ✅ If DSA tracing is not implemented in Phase 1, the report explicitly marks it as unavailable rather than silently omitting it. (Every analyzer markdown report ends with: _"DSA long-context retrieval tracing (Phase 3) is **not yet implemented** in this report; see `GLM52_TRACE_PLAN.md`. Activation summaries (Phase 4) are disabled by default and require explicit flags."_)
@@ -394,7 +394,7 @@ Acceptance criteria:
 - ✅ The analyzer reports language overlap/specialization metrics.
 - ✅ The analyzer reports tokenization statistics per language, including token count and tokens per character or word where applicable. (was unmet until Bug 5: `RunMetadata.prompt_path` required → sidecars silently failed to load → `tokenization_stats_per_language` empty. Fixed 2026-06-20. Mean prompt tokens by lang: en=29.0, zh=28.7, de=43.3 at N=161.)
 - ✅ Reports distinguish language-specific patterns from task-specific patterns using same-task translated prompts. (Confirmed via the scaled 161-prompt study: the apparent zh/non-zh isolation at 49 prompts was a sampling artifact; multiple variants per cell are required to separate language from prompt-idiosyncratic routing.)
-- ✅ Code-switching prompts can be labeled with multiple languages, such as `en+it` or `en+zh`. (DONE 2026-06-20: `prompts/tracing/glm52_code_switch_suite.expanded.jsonl` — 6 language pairs × 3 domains + 1 triple-language (en+zh+es) = 16 prompts. Analyzer treats `language` as opaque string, so multi-segment labels aggregate naturally. Findings: code-switch entropy = midpoint of component langs (-0.015 to +0.017 bits); code-switch top-10 = partial union (5-7 experts shared with each of the two langs at layer 10). 16-prompt N caveat noted; per-cell claims require ≥3 variants/cell.)
+- ✅ Code-switching prompts can be labeled with multiple languages, such as `en+it` or `en+zh`. (DONE 2026-06-20: `common/prompts/glm52_code_switch_suite.expanded.jsonl` — 6 language pairs × 3 domains + 1 triple-language (en+zh+es) = 16 prompts. Analyzer treats `language` as opaque string, so multi-segment labels aggregate naturally. Findings: code-switch entropy = midpoint of component langs (-0.015 to +0.017 bits); code-switch top-10 = partial union (5-7 experts shared with each of the two langs at layer 10). 16-prompt N caveat noted; per-cell claims require ≥3 variants/cell.)
 
 ### Story 8 — Quantization/pruning evaluator compares baselines
 
@@ -418,7 +418,7 @@ Acceptance criteria:
 - ✅ Scripts write results to timestamped files or require explicit overwrite confirmation. (`run_glm52_moe_trace.sh` suffixes output paths with `-$(date +%Y%m%d-%H%M%S)`; `run_trace_suite_batched.sh` writes per-prompt traces into a timestamped batched dir. The C++ writer refuses to overwrite existing files.)
 - ✅ Reports include the exact input trace files used. (`## Reproducibility provenance` section now includes full `command_line` + `sources[]` list with trace filenames. The JSON summary also carries all provenance fields per source.)
 - ✅ Project memory files are updated with major findings. (`GLM52_SESSION_MEMORY.md` is the canonical findings record per AGENTS.md; `GLM52_TRACE_PLAN.md` session-status section tracks phase progress; both updated each round.)
-- ✅ Trace artifacts are stored under predictable `traces/` and `reports/` paths. (Traces: `traces/<batch_name>/<test_id>-<language>.jsonl`. Reports: `reports/glm52_<study_name>_report.md` + `_summary.json`. Both directories documented in `traces/README.md`.)
+- ✅ Trace artifacts are stored under predictable `common/traces/` and `common/reports/` paths. (Traces: `common/traces/<batch_name>/<test_id>-<language>.jsonl`. Reports: `common/reports/glm52_<study_name>_report.md` + `_summary.json`. Trace lifecycle is documented in `common/traces/README.md`.)
 
 ### Story 10 — CI maintainer validates quantization/pruning scripts without rewriting models
 
@@ -451,10 +451,10 @@ Use short and medium prompts first.
 A concrete multilingual smoke suite has been created:
 
 ```text
-prompts/tracing/glm52_trace_smoke_suite.json
-prompts/tracing/glm52_trace_smoke_suite.expanded.jsonl
-prompts/tracing/README.md
-scripts/tracing/expand_smoke_suite.py
+common/prompts/glm52_trace_smoke_suite.json
+common/prompts/glm52_trace_smoke_suite.expanded.jsonl
+common/prompts/README.md
+common/scripts/expand_smoke_suite.py
 ```
 
 Smoke-suite counts:
@@ -838,7 +838,7 @@ C++ tracer rebuilt warning-clean. Both repos ready to commit.
 
 ### 2026-06-20 — Code-switch routing study + Story 7 AC complete
 
-Status: **DONE.** Authored `prompts/tracing/glm52_code_switch_suite.expanded.jsonl`
+Status: **DONE.** Authored `common/prompts/glm52_code_switch_suite.expanded.jsonl`
 (16 prompts: 6 lang pairs × 3 domains + 1 triple en+zh+es) and traced it via
 the batched wrapper. 51,554 records, 0 dropped, 75 layers, 5.1 min. Marks
 Story 7's last open AC (code-switching) ✅ — fully closes Story 7.
@@ -908,7 +908,7 @@ Status: **DONE.** Re-ran the multilingual study with the FULL expanded suite
 (161 prompts, 3-4 test variants per language×domain cell) instead of the
 one-per-combo 49-prompt subset. **590,467 routing records, 0 dropped, 75 layers,
 41.6 min wall.** Findings in `GLM52_SESSION_MEMORY.md` "Scaled multilingual
-study" section. Artifacts: `reports/glm52_multilingual_full_report.md` +
+study" section. Artifacts: `common/reports/glm52_multilingual_full_report.md` +
 `_summary.json`.
 
 **The 49-prompt headline ("zh shares zero top experts with Latin languages")
@@ -961,7 +961,7 @@ Original 49-prompt headline (now known to be partly sampling noise):
 
 ### 2026-06-20 — Phase 1 implemented & verified
 
-Status: **DONE.** Python framework (`src/gguf2mlx/tracing/`), CLI scripts, tests
+Status: **DONE.** Python framework (`glm52_kitchen/tracing/`), CLI scripts, tests
 (74 pass), C++ backend (`examples/trace-moe/`, built warning-clean), real-data
 smoke on mixed GLM-5.2 (32 records, 8 experts/event, 0 dropped), synth pipeline
 (161 traces → 6440 records → report). Docs updated. See
@@ -973,7 +973,7 @@ Status: **RESOLVED.** Found while validating the run scripts that
 were referenced in docs/AGENTS.md but never executed (the real-data smoke ran
 the `llama-trace-moe` binary directly).
 
-`scripts/tracing/run_glm52_moe_trace.sh` (and by extension
+`common/scripts/run_glm52_moe_trace.sh` (and by extension
 `run_trace_task_suite.sh`, which calls it) built a `trace_args` array that
 included `--jinja -cnv -st --chat-template-kwargs`, all `set_examples()`-
 restricted to CLI/SERVER/MTMD while the example is `LLAMA_EXAMPLE_COMMON`.
@@ -986,7 +986,7 @@ Fix applied (two parts):
    verbatim`). Chosen over changing the example type to `LLAMA_EXAMPLE_CLI`
    because the tracer never calls `common_chat_init` — accepting the flags
    would have silently done nothing. The truthful behavior (verbatim prompt,
-   already documented in `traces/README.md`) is preserved and made explicit.
+   already documented in `common/traces/README.md`) is preserved and made explicit.
 2. **Wrapper used an invalid `--ngl` flag** (valid forms are `-ngl` /
    `--gpu-layers` / `--n-gpu-layers`; there is no `--ngl`). Fixed to `-ngl`
    to match the baseline scripts.

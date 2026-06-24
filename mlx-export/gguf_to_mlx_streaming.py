@@ -17,6 +17,7 @@ import argparse
 import gc
 import json
 import re
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -247,7 +248,6 @@ def convert_streaming(gguf_dir: str, output_dir: str, dry_run: int = 0,
     # tokenizer.json (original GLM-5.2 HF release / a prior good MLX export) is
     # provided, copy it over the extracted one.
     if reference_tokenizer:
-        import shutil
         ref = Path(reference_tokenizer)
         ref_json = ref / "tokenizer.json" if ref.is_dir() else ref
         if ref_json.is_file():
@@ -360,20 +360,30 @@ def convert_streaming(gguf_dir: str, output_dir: str, dry_run: int = 0,
     # bits (4), which mismatches 2-bit experts → shape error
     #   expected (256,2048,768) got (256,2048,384).
     # Mirror each layer's per-expert rule onto the stacked switch_mlp path.
-    _switch_added = 0
-    for _k, _v in list(quantization_block.items()):
-        _m = re.match(
+    # NOTE: keys are actively read, so no underscore prefix (Python convention
+    # marks `_`-prefixed names as intentionally unused). See REMEDIATION_PLAN P2.
+    switch_added = 0
+    for key, val in list(quantization_block.items()):
+        m = re.match(
             r"(model\.layers\.\d+)\.mlp\.experts\.\d+\.(gate_proj|up_proj|down_proj)$",
-            _k,
+            key,
         )
-        if _m and isinstance(_v, dict):
-            _sm = f"{_m.group(1)}.mlp.switch_mlp.{_m.group(2)}"
-            if _sm not in quantization_block:
-                quantization_block[_sm] = _v
-                _switch_added += 1
-    if _switch_added:
-        print(f"    + added {_switch_added} switch_mlp quant entries "
+        if m and isinstance(val, dict):
+            switch_key = f"{m.group(1)}.mlp.switch_mlp.{m.group(2)}"
+            if switch_key not in quantization_block:
+                quantization_block[switch_key] = val
+                switch_added += 1
+    if switch_added:
+        print(f"    + added {switch_added} switch_mlp quant entries "
               f"(stacked-expert paths)")
+    elif any(".mlp.experts." in k for k in quantization_block):
+        # switch_added == 0 while per-expert entries exist is suspicious for
+        # GLM-5.2: it means the routed-expert key format drifted from the
+        # anchored regex above, and the stacked switch_mlp quant config will be
+        # incomplete → shape error at load (expected (256,2048,768) got …).
+        print("    WARNING: 0 switch_mlp quant entries added despite "
+              "per-expert tensors present — routed-expert key format may have "
+              "changed; review the regex in finalize().")
 
     # Write config.json with quantization block
     config["quantization"] = quantization_block

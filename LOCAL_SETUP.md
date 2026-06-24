@@ -106,3 +106,58 @@ uv pip install -e ".[dev]"
 pytest -q                                       # 71 pass + 1 skip (scoped to tests/)
 python -c "from gguf2mlx import convert; print('ok')"  # converter importable
 ```
+
+## Run the model
+
+Everything below assumes `MODEL` resolves to a built GGUF. Both baseline scripts
+default it to the full mixed-IQ2S GGUF at
+`$MODEL_DIR/GLM-5.2-mixed-IQ2S-experts-IQ4NL-rest/GLM-5.2-mixed-00001-of-00009.gguf`;
+override with `MODEL=...` to point at the shortgpt-pruned variant etc.
+
+### Short context (merge-sort smoke)
+
+```sh
+bash common/baselines/glm52_merge_sort_baseline.sh
+# writes merge-sort output + a 6-case Python sanity check to $OUT
+# ENV:  MODEL  GGUF path (default: full mixed-IQ2S)
+#       OUT    output file (default: glm52_merge_sort_output.txt)
+#       CLI    llama-cli binary (default: $ROOT/vendor/llama.cpp/build-metal/bin/llama-cli)
+```
+
+### Long context (~18.7K-token needle-in-haystack retrieval)
+
+```sh
+bash common/baselines/glm52_longctx_retrieval_baseline.sh
+# pre-token-counts the prompt, runs retrieval, checks for sentinel BLUE-FALCON-48217
+# ENV:  MODEL        GGUF path (default: full mixed-IQ2S)
+#       PROMPT_FILE needle prompt (default: common/baselines/long_coding_task_20k_retrieval_prompt.md)
+#       OUT         output file (default: glm52_longctx_retrieval_output.txt)
+# Expected answer: sentinel BLUE-FALCON-48217, function repair_event_stream, recursion_allowed: no
+```
+
+### Launch the server (for prompt-cache / decode benchmarks)
+
+```sh
+$ROOT/vendor/llama.cpp/build-metal/bin/llama-server \
+  -m "$MODEL" --host 127.0.0.1 --port 8081 -ngl 999 -c 100000 -np 1 -fa on -t 8 --jinja --no-warmup
+# then run e.g.:  .venv/bin/python scripts/longctx_decode_bench.py <label> <out_json>
+```
+
+### DSA sparse-gather attention (opt-in)
+
+The decode-path sparse-gather rewrite (PLAN.md §7.N) is **off by default** — the
+frozen dense baseline runs unless `LLAMA_DSA_SPARSE_GATHER=1` is set. Measured:
+1.28× faster at 53K-context decode (4.93 vs 3.85 tok/s), 1.55× at short context,
+with no correctness regression and a byte-identical prefill/cache path.
+
+```sh
+LLAMA_DSA_SPARSE_GATHER=1 bash common/baselines/glm52_merge_sort_baseline.sh  # short ctx, sparse
+LLAMA_DSA_SPARSE_GATHER=1 vendor/llama.cpp/build-metal/bin/llama-server ...   # server, sparse
+# unset (or omit the env var) to run the unchanged dense baseline
+```
+
+> ⚠️ The IQ2S-expert quantization tier collapses to incoherent output past ~8–16K
+> context in **both** the full-mixed and shortgpt-pruned GGUFs (see
+> `GLM52_SESSION_MEMORY.md`, 2026-06-24 §7.N entry). Short-context results remain
+> correct; long-context *quality* cannot be validated at this quantization tier
+> regardless of attention path.

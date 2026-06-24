@@ -33,3 +33,12 @@ common/traces/synth/
 # tracer run logs (llama-cli verbose output captured to *.run.log)
 *.run.log
 
+
+# ephemeral run-state markers (never useful to commit)
+logs/*.pid
+logs/*.active_log
+*.pid
+
+# server/build logs are reproducible and bulky; track specific benchmark logs
+# explicitly via `git add -f` when they contain timing records worth keeping.
+logs/

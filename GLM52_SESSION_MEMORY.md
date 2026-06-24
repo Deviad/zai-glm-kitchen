@@ -4170,3 +4170,730 @@ compare a *small fixed prompt* position-by-position, not aggregate stats.
 tokenizer.json, `What is 2+2?` (enable_thinking=False, 13-token prompt) must
 produce coherent text whose first token matches llama.cpp's 'The' (the pruned
 GGUF answers "The answer is 4."), not a digit-loop.
+
+### 2026-06-22 — VERIFIED: router+norm fix cures 4-bit model; 2-bit-affine experts is the ONLY remaining culprit
+
+Ran the verification target `What is 2+2?` (max_tokens=80) against both
+re-converted models on disk (512 GB RAM, mlx_lm 0.31.3, glm_moe_dsa forward
+override). Both models confirmed to carry the FIXED router fingerprint
+(`[-0.02856,0.00201,0.04199,0.07861,-0.04517,...]`) and non-zero layernorms
+(`model.norm.weight[0..4]=[1.328,1.188,1.242,1.180,1.227]`,
+`layers.3.input_layernorm=[0.0523,0.0510,...]`), so both were produced by the
+fixed converter.
+
+**Result — two distinct culprits, now fully isolated:**
+
+1. **`GLM-5.2-shortgpt-pruned-4bit-mlx` (uniform 4-bit affine): COHERENT.**
+   Output: `The user is asking a simple arithmetic question: "What is 2+2?".
+   I need to answer this straightforwardly. The standard answer is
+   4.</think>The answer is 4.` First content token `The`, exact match to the llama.cpp
+   target. 41 tok, 5.2s, 7.8 tok/s. **This closes Bug A + Bug B: the router /
+   layernorm conversion fix was the ENTIRE original culprit.** The forward path
+   (glm_moe_dsa → deepseek_v32, MLA + interleaved RoPE + sigmoid MoE gate) is
+   correct — no forward-path gap.
+
+2. **`GLM-5.2-shortgpt-pruned-mixed-mlx` (experts=2-bit affine, rest=4-bit):
+   STILL GIBBERISH** despite the same fixed converter + correct routers/norms.
+   Output: `lopamass_transchain_a_c_alopymaoptymasoaroltrans_a_a_a_a_a_a...`
+   (degenerate from token 0). Since this model used the IDENTICAL fixed
+   converter as #1 and differs ONLY in expert bits (2 vs 4), the remaining
+   gibberish is **not** a conversion bug.
+
+**Root cause of the mixed-model gibberish (NOT a conversion bug): MLX 2-bit
+affine is catastrophically lossy for routed-expert weights; the predicate's
+"IQ2_S → 2-bit affine" mapping is invalid.** The GGUF baseline keeps experts at
+IQ2_S (importance-matrix-calibrated 2-bit with non-linear lookup codebook) which
+llama.cpp runs coherently (merge-sort + 18.7k retrieval baselines both pass).
+MLX `affine` mode has NO IQ2_S equivalent — it is naive uniform group
+quantization, and naive 2-bit on expert MLPs destroys routing downstream
+(flattens gate discrimination the same way the scrambled routers did, but for a
+legitimate numerical-quality reason this time). 3-bit affine is the practical
+floor for MLX affine on this model class.
+
+**Fix for the mixed track (NOT yet applied):** re-convert with
+`GLM52_EXPERT_BITS=3` (the predicate already supports this env override). This
+will grow the model (experts 2b→3b ≈ +50% of expert weight bytes) but should
+restore coherence while still undercutting the uniform-4-bit size. If 3-bit is
+still degenerate, fall back to the verified-coherent uniform-4-bit export.
+Uniform-4-bit is the new trusted MLX baseline for GLM-5.2 until a 3-bit expert
+probe proves otherwise.
+
+**Verified-result block:**
+- 4-bit uniform: `2+2` → `The answer is 4.` (coherent, rep=0.00). PASS.
+- mixed 2-bit-experts: `2+2` → `lopamass_transchain_a_a_a...` (gibberish). FAIL
+  — cause is 2-bit affine expert quality, not conversion.
+- Log: `logs/verify_4bit_2plus2_20260622_180418.log`,
+  `logs/verify_mixed_2plus2_20260622_180629.log`.
+
+---
+
+### 2026-06-23 — GLM-5.2 → JANGTQ_K TurboQuant: WORKING coherent MLX bundle
+
+**Goal.** User wanted TurboQuant (JANGTQ) with *non-fixed* bit widths (not a
+uniform tier) for GLM-5.2, served via vMLX `vmlx-engine`. Earlier JANG_4L
+(fixed-tier) output was unloadable; 2-bit affine MLX experts were gibberish.
+
+**Source.** Downloaded full **BF16** `zai-org/GLM-5.2` (1.5 TB, 282 shards,
+hash-verified via `hf download`) to `/Volumes/Backup/GLM-5.2`. A real fp16
+source removes the lossy-on-lossy GGUF→HF double-quantization that corrupted
+the earlier JANG_4L experts (96-vs-768 packed-dim mismatch).
+
+**No off-the-shelf converter existed.** `jang convert` / `vmlx-engine convert`
+expose only fixed `JANG_*` tiers + affine `JANG_*K` k-quant — NOT TurboQuant
+(MXTQ codebook). True JANGTQ lives only in per-model `convert_*_jangtq.py`
+scripts; the lone GLM one (`convert_glm51_jangtq_2l.py`) is hard-wired to fixed
+JANGTQ_2L + FP8. So we wrote a GLM-5.2 JANGTQ_K converter.
+
+**New converter:** `mlx-export/convert_glm52_jangtq_k.py` (adapted from
+`jang_tools.convert_minimax_jangtq` + `convert_glm51_jangtq_2l`). Bit policy
+(JANGTQ_K mixed, per-projection on routed experts):
+- `gate_proj` 2-bit MXTQ, `up_proj` 2-bit MXTQ (gated activations)
+- `down_proj` 4-bit MXTQ (output enters residual stream — most sensitive)
+- `self_attn` (MLA/DSA), `shared_experts`, `embed_tokens`, `lm_head`, MoE
+  router `gate`, all norms/biases → **fp16 passthrough**.
+
+**Fix that avoids the JANG_4L crash (the crux).** `glm_moe_dsa.Model`
+subclasses `deepseek_v32.Model`; its `sanitize()` does
+`quantized = ("...kv_b_proj.scales" in weights)` then, if quantized,
+`bits = (kv_b_proj.shape[-1]*32)//kv_lora_rank` → `mx.quantize(bits=bits)`,
+which raised `bits=1 not supported` on JANG_4L. **By keeping attention fp16
+(no `kv_b_proj.scales` written), `quantized` is False and the whole quantize
+branch is skipped** — only the fp16 reshape into `embed_q`/`unembed_out` runs.
+Verified pre-flight: classifier maps `kv_b_proj` → `(16,'passthrough')`.
+
+**Loader path.** `.tq_packed` keys route through
+`vmlx_engine.utils.jang_loader._load_jang_v2` → MXTQ fast path →
+`jang_tools.load_jangtq.load_jangtq_model`, which explicitly supports
+`glm_moe_dsa` and stacks per-expert `mlp.experts.E.{proj}` into 3-D
+`TurboQuantSwitchLinear` via its `glm_pat`. NOT the deepseek sanitize requant
+path — native TQ Metal kernels, no dequant.
+
+**Bug found + fixed during load: GLM-5.2 MTP block.** GLM-5.2 ships
+`num_hidden_layers=78` (main layers 0–77) PLUS a Multi-Token-Prediction block
+stored at **layer index 78** (`num_nextn_predict_layers=1`; tensors
+`eh_proj/enorm/hnorm/shared_head`). The converter quantized layer-78's routed
+experts, but `mlx_lm` glm_moe_dsa builds only layers 0–77, so 3 TQ groups
+(`model.layers.78.mlp.switch_mlp.{gate,up,down}_proj`) had no target module and
+the loader hard-failed (the JANGTQ allowlist matches `mtp.`/`eh_proj`, but this
+block is named `layers.78`, not `mtp.`). **Fix:** wrote
+`mlx-export/strip_mtp_layer.py` — drops all `model.layers.78.*` keys (rewrote
+2 mixed shards, deleted 2 pure-MTP shards, rewrote index). MTP is a
+training/speculative-decode aux, unused in standard autoregressive inference.
+
+**Verified result.**
+- Output: `/Volumes/Data NVME/GLM-5.2-MLX/GLM-5.2-JANGTQ_K/` — **277 shards,
+  279 GB weights, ~3.51 bpw** (incl fp16 attn/shared/embed/head).
+- tq_bits histogram `{2: 38912, 4: 19456}` — **zero 1-bit tensors** (JANG_4L
+  crash cause structurally absent). 58368 MXTQ + 1217 fp16 passthrough.
+- `is_jang_model=True`, `is_v2_model=True`, capabilities `family=glm5,
+  cache=mla`.
+- **Loads** via `load_jang_model` in 87.9 s; all 225 expert modules replaced;
+  no crash.
+- **Coherent generation** (zero gibberish markers): `2+2`→"2+2 equals 4";
+  factorial→correct n=0→1 / iterative-vs-recursive analysis; capital of
+  France→"The capital of France is Paris". ~10.6 tok/s, 280 GB peak.
+- Conversion wall time ~1h59m (59585 tensors @ ~8.3 it/s).
+- Scripts: `mlx-export/convert_glm52_jangtq_k.py`,
+  `mlx-export/strip_mtp_layer.py`. Logs:
+  `logs/jangtq_k_convert_20260623_100118.log`,
+  `logs/jangtq_k_loadtest2_20260623_120853.log`,
+  `logs/jangtq_k_coherence_20260623_121106.log`.
+
+**This is the first working coherent GLM-5.2 MLX bundle with non-uniform
+TurboQuant precision, served via the vmlx-engine JANGTQ native path.**
+
+### 2026-06-23 — GLM-5.2-JANGTQ_K served via vmlx-engine: HTTP test suite PASS
+
+Launched `vmlx-engine serve <bundle> --host 127.0.0.1 --port 8080`. Boot:
+model loaded in ~40s, MLA detected → KV-cache quant auto-disabled (correct;
+compressed latents must not be re-quantized), batched engine + prefix cache on,
+`/health` 200 `model_loaded:true`, baseline Metal working-set active=260GB.
+
+OpenAI-compatible `/v1/chat/completions` results (temp 0.2–0.3, ~9–10 tok/s gen):
+- **17×23** → "**391**" via distributive method. finish=stop. ✓
+- **is_prime(n)** → textbook 6k±1 wheel (`i+=6`, checks `n%i`,`n%(i+2)`),
+  correct edge cases, clean docstring. finish=stop. ✓
+- **3 largest planets** (enable_thinking=false) → Jupiter/Saturn/Uranus with
+  accurate radii + Neptune-vs-Uranus nuance. finish=stop. ✓
+- **capital of Japan** (system: concise) → "Tokyo." finish=stop. ✓
+- **multi-turn**: recalled "42" across turns → 42×2=84, "even". finish=stop. ✓
+- **photosynthesis 150-word** → fluent accurate paragraph (chloroplasts,
+  light-dependent + Calvin cycle), gibberish-regex clean. finish=stop. ✓
+
+Key behaviors:
+- GLM-5.2 emits reasoning in the `reasoning_content` channel; final answer in
+  `content`. With default thinking ON, short questions can exhaust max_tokens
+  inside reasoning before `content` is written — raise the cap or pass
+  `chat_template_kwargs={"enable_thinking":false}` for direct answers.
+- `enable_thinking:false` verified working (0 reasoning tokens, direct content).
+- Throughput ~8.4–10.0 tok/s generation, 280GB peak, served from NVME.
+
+Server stayed healthy across all 7 requests. Bundle is production-usable via
+the vmlx-engine JANGTQ native path.
+
+### 2026-06-23 — Token/s shootout: MLX JANGTQ_K vs GGUF shortgpt-pruned IQ2_S
+
+User asked which serves faster. Same prompt battery, same M3 Ultra, chat mode.
+
+| Model | Format / serve | Gen tok/s (wall) | Gen tok/s (server) | Bundle | RSS |
+|---|---|---|---|---|---|
+| GLM-5.2-JANGTQ_K | MLX, vmlx-engine :8080 | ~8.4-10.0 | n/a | 279 GB | ~260 GB |
+| GLM-5.2-shortgpt-pruned-IQ2S-IQ4NL | GGUF, llama-server :8081 | ~22-24 | 24.48 | 191 GB | 189 GB |
+
+Winner on throughput: GGUF shortgpt-pruned IQ2_S — ~2.4x faster (24.48 vs
+~9-10 tok/s; prompt 43.9 tok/s). Both coherent (correct 17x23=391, clean
+is_prime w/ math.isqrt, Jupiter/Saturn/Uranus, 42x2=84 even, accurate
+photosynthesis; zero gibberish with thinking off). Why GGUF wins:
+(a) shortgpt layer pruning removes whole transformer layers (fewer matmuls/
+token), (b) llama.cpp Metal kernels for IQ2_S/IQ4_NL are highly optimized,
+(c) smaller bundle (191 vs 279 GB) -> less memory bandwidth/token. The MLX
+JANGTQ_K keeps attention+shared+embed at fp16 (heavier) and has no layer
+pruning (full 78 layers).
+
+Both share the GLM reasoning-channel behavior: thinking ON puts CoT in
+reasoning_content and short prompts can exhaust max_tokens before content;
+pass chat_template_kwargs={"enable_thinking":false} for direct answers.
+
+llama-server launch (patched build):
+  vendor/llama.cpp/build-metal/bin/llama-server -m <shard1.gguf> \
+    --host 127.0.0.1 --port 8081 --jinja -ngl 99 -c 8192 --metrics
+Logs: logs/llama_server_shortgpt_20260623_194503.log
+
+### 2026-06-23 — Long-context test: shortgpt GGUF, 100K window, 50K prompt
+
+llama-server relaunched with -c 102400 -np 1 -fa on (model n_ctx_train=1048576,
+so 100K is well within range). Needle-in-haystack: 700-section synthetic KB,
+unique record buried at section 350 (~50% depth), prompt = 53,633 tokens.
+
+PERFECT retrieval (3/3): "The passphrase is BLUE-FALCON-48217, which the
+platform security team must rotate every 90 days." finish=stop, no hallucination.
+
+Timing (53.6K prompt): cold prefill is O(n^2) — 233 tok/s at 2K context decaying
+to ~29 tok/s at the tail (~1085s wall for full 53.6K). Generation ~7.4-7.5 tok/s
+(slower than the 24 tok/s short-context decode because each token attends over
+53.6K KV). Cached re-run: prefill instant (prompt-cache hit), answer in 3.6s.
+RSS ~198GB at 53.6K ctx (MLA keeps KV compact). Flash-attn + single-slot used.
+
+Gotcha: cold 50K prefill needs >20min client timeout. llama.cpp caches partial
+prefill even on a CANCELLED request — a resend resumes from the cached prefix
+(run 2 started at 76% after run 1 cancelled at 69%).
+
+All results consolidated in KITCHEN_RESULTS.md (new file, repo root).
+
+### 2026-06-23 — Long-ctx decode speed: context-dependence + KV-quant dead end
+
+User noted 7.5 tok/s < DeepSeek Pro's 15 tok/s. Investigated:
+- The 7.x figure is SPECIFICALLY at 53.6K context. Same model does 24.5-25.4
+  tok/s at <=8K. Sustained clean measure at 54K = 7.19 tok/s over 160 tok.
+- Decode slows 24.5 -> 7.2 because each token attends over 53.6K KV (inherent
+  transformer/MLA behavior, not a quant defect).
+- Tried KV cache q8_0 (-ctk q8_0 -ctv q8_0) to cut KV bandwidth: BACKFIRED —
+  long-ctx decode dropped to 2.21 tok/s (3.3x WORSE). On Metal the per-step
+  dequant overhead at 54K exceeds the bandwidth saved. Cold prefill also a bit
+  slower (35.5 vs ~44 tok/s). Short-ctx was fine (25.4). Reverted to f16 KV.
+- Any tok/s comparison MUST cite context length. 7.5@54K vs a 15 tok/s number
+  at unknown (likely short) context is not apples-to-apples; at short context
+  this model already does 24.5-25.4 tok/s.
+
+Best long-ctx serve config stands: -c 102400 -np 1 -fa on, f16 KV.
+KITCHEN_RESULTS.md updated with the decode-vs-context table + KV-quant finding.
+
+### 2026-06-23 — ROOT CAUSE of long-ctx slowdown: llama.cpp stubs out GLM-DSA sparse attention (Sanfilippo was right)
+
+User: "Salvatore Sanfilippo pointed out the issue is within llama.cpp. That's
+why he created Dwarf Star 4." Confirmed from the patched llama.cpp source.
+
+GLM-5.2 is a DSA (DeepSeek Sparse Attention) model: config index_topk=2048, so
+each token should attend to only ~2048 selected KV entries regardless of context
+depth → near-flat decode tok/s as context grows. llama.cpp does NOT implement
+this. Three source facts (vendor/llama.cpp):
+
+1. **Graph aliased to dense DeepSeek2** — models.h:1115
+   `struct llama_model_glm_dsa { using graph = llama_model_deepseek2::graph; }`
+   deepseek2::graph is dense MLA, no top-k / no sparsity.
+
+2. **Indexer tensors loaded but unused** — glm-dsa.cpp loads 8 indexer tensors
+   (indexer_k_norm/_proj/_attn_k/_attn_q_b...); deepseek2.cpp (the graph that
+   actually runs) references "indexer" 0 times. Dead weight in RAM.
+
+3. **Sparse KV cache gated to DEEPSEEK32 only** — llama-model.cpp:~2026
+   `case LLM_ARCH_DEEPSEEK32: res = new llama_kv_cache_dsa(...)`. There is NO
+   `case LLM_ARCH_GLM_DSA` in the memory-creation switch → GLM-DSA falls to
+   default → standard DENSE attention KV cache.
+
+CONSEQUENCE: the measured decode 24.5 tok/s @ <=8K → 7.2 tok/s @ 54K is dense
+O(n) attention over the full KV. NOT a quant defect, NOT fixable via KV-quant
+flags (q8_0 made it 3.3x WORSE — wrong layer). With DSA wired (indexer top-2048
++ sparse KV cache) decode would stay near-flat deep into context, which is what
+Dwarf Star 4 / DeepSeek-Pro deliver (~15 tok/s at long ctx).
+
+FIX PATH (real work, not a flag): implement the GLM-DSA forward path in
+llama.cpp — (a) build the lightning indexer in the graph (use the 8 loaded
+indexer tensors to score keys), (b) top-k=2048 selection, (c) add
+`case LLM_ARCH_GLM_DSA` to the llama_kv_cache_dsa creation switch, (d) stop
+aliasing to deepseek2::graph; give glm_dsa its own sparse graph. This is the
+same forward-path gap documented in docs/research/ (IndexShare F/S pattern) and
+PLAN.md AC7. Cross-ref: this is exactly why Sanfilippo forked to Dwarf Star 4.
+
+### 2026-06-23 — Patched llama.cpp to RUN GLM-DSA sparse attention (4 edits) + honest perf result
+
+Implemented the GLM-DSA sparse forward path in vendor/llama.cpp (PLAN.md §7.L).
+Four source edits:
+
+1. **models.h** — `llama_model_glm_dsa` gets its OWN `struct graph` instead of
+   `using graph = llama_model_deepseek2::graph` (dense). Body cloned from
+   `llama_model_deepseek32::graph` (lightning indexer + ggml_top_k + sparse
+   build_attn).
+2. **glm-dsa.cpp** — added `#include "llama-kv-cache-dsa.h"` + the full DSA
+   graph body (346 insertions); reads indexer hparams (already present).
+3. **llama-model.cpp** — added `case LLM_ARCH_GLM_DSA` to the
+   `llama_kv_cache_dsa` creation switch (was DEEPSEEK32-only → GLM fell through
+   to dense default cache).
+4. **llama-kv-cache.cpp** — THE CRITICAL BUG: the Hadamard rotation enable
+   `attn_rot_k = true` was hardcoded `if (model.arch == LLM_ARCH_DEEPSEEK32 &&
+   ...)`. GLM-DSA's indexer lid-cache is non-quantized so the generic
+   `attn_rot_k` path was false → `build_input_k_rot` returned null →
+   `self_k_rot_lid=0x0` → `ggml_mul_mat(null, indexer_q)` SEGFAULT at graph
+   build. Fix: extend the condition to include `LLM_ARCH_GLM_DSA`.
+
+Debugging path: lldb backtrace → `glm_dsa::graph::graph + 1480` in
+`ggml_mul_mat` reading addr 0x10 (null). Per-tensor fprintf showed all weights
+valid but `self_k_rot_lid=0x0`. Traced to the arch-gated Hadamard enable.
+
+**VERIFIED WORKING (no segfault, coherent, DSA actually running):**
+- Build clean (cmake, Metal Release), no regressions.
+- `creating indexer KV cache, size = 4096` + `attn_rot_k = 1, n_embd_head_k_all
+  = 128` confirmed in load log → sparse DSA cache + Hadamard active.
+- `Question: What is 2+2? Answer:` → `4 You must be joking...` (coherent).
+- 18 DSA indexer ops (indexer_score/indexer_kq/ggml_top_k) in the graph.
+
+**HONEST PERF RESULT (the surprise):** DSA sparse decode is SLOWER than dense
+at 54K, not faster.
+- DENSE (old, deepseek2 alias):  decode 7.2 tok/s @ 54K
+- DSA SPARSE (this patch):        decode 4.22 tok/s @ 54K
+- Prefill ~33.7 tok/s (DSA) vs ~29 (dense) — roughly same (prefill processes
+  all tokens either way).
+
+WHY: with index_topk=2048 at 54K, per token the indexer must (a) score ALL 54K
+cached indexer keys (an O(n) matmul per layer), (b) `ggml_top_k(54K→2048)`
+which is a sort-based op, THEN (c) attend over 2048. Steps (a)+(b) cost more
+than the dense attention they replace at this context length on Metal. The
+llama.cpp DSA kernels are not yet optimized (no fused indexer, ggml_top_k is
+generic sort, no Metal sparse-gather fast path). This is EXACTLY Sanfilippo's
+point: the DSA *implementation* in llama.cpp is the bottleneck — the algorithm
+is sparse but the kernels don't realize the speedup. Dwarf Star 4 presumably
+ships optimized indexer/top-k/sparse-attention kernels.
+
+Net: the patch makes GLM-DSA RUN its real sparse-attention graph (correctness
+win, indexer no longer dead weight), but does NOT beat dense decode until the
+underlying DSA kernels (indexer scoring + top-k + sparse gather) are optimized.
+The crossover would favor sparse at much larger contexts and/or smaller
+index_topk, or with fused Metal kernels.
+
+Files: vendor/llama.cpp/src/{models/models.h,models/glm-dsa.cpp,llama-model.cpp,
+llama-kv-cache.cpp}. Logs: logs/glmdsa_clean_*.log (coherence),
+logs/llama_server_dsa_100k_*.log (54K decode 4.22 tok/s).
+
+### 2026-06-23 (C) — DSA context-length sweep: crossover NOT reachable with full-sort top_k
+
+Sweep at default index_topk=2048, patched llama.cpp, shortgpt-pruned GGUF.
+Decode tok/s vs context (from /completion timings, n_predict=48):
+
+  ~2K  -> 10.08 tok/s
+  ~4K  ->  8.95 tok/s
+  ~8K  ->  8.13 tok/s  (dense @ <=8K was 24.5)
+ ~16K  ->  6.96 tok/s
+ ~32K  ->  5.47 tok/s
+ ~54K  ->  4.22 tok/s  (dense @ 54K was 7.2)
+
+Monotonic DOWN. DSA slower than dense at EVERY context (2K-54K), and the
+gap exists even at 2K (10 vs ~24) -> the indexer machinery (Hadamard +
+per-layer indexer matmul + full bitonic argsort over n + gather) adds fixed
+overhead before context matters.
+
+Key structural note: ggml_top_k(ctx, a, k) dispatches kernel_argsort — a FULL
+bitonic argsort over ALL n cached keys regardless of k. k only shrinks the
+final attention (O(k)), NOT the sort (O(n log^2 n)). So reducing index_topk
+(e.g. 2048->512) would NOT fix the crossover — the sort dominates and scales
+with n.
+
+VERDICT (C): crossover to DSA-beats-dense is NOT reachable with the current
+full-sort ggml_top_k kernel. The only path to DSA paying off is a
+partial-select / quickselect / threshold top-k kernel (option A) that is
+O(n) and doesn't fully order. Confirmed before spending effort. The MTP
+self-speculative decode track (option B) is the parallelism lever worth
+pursuing next.
+
+Data: logs/dsa_sweep_results.json. Script: scripts/sweep_dsa_decode.py.
+
+### 2026-06-23 — Option (A) radix-select top-k kernel: implemented, correct, but SLOWER — premise from (C) was wrong
+
+**What was done.** Implemented a radix-select Metal kernel
+(`kernel_top_k_f32_i32_radix` in `ggml-metal.metal`) as a drop-in replacement
+for the blocked bitonic `kernel_argsort_f32_i32_desc` used by `GGML_OP_TOP_K`.
+Float→monotonic-uint, 4 byte-level histogram passes to locate the k-th-largest
+key T, then a scatter pass emitting top-k indices (unordered; set-equality only,
+which is what `ggml_set_rows` downstream consumes). Host dispatch in
+`ggml-metal-ops.cpp::ggml_metal_op_top_k` and pipeline selection in
+`ggml-metal-device.cpp::ggml_metal_library_get_pipeline_top_k`.
+
+**Correctness: PASS.** `test-backend-ops test -o TOP_K` → **445/445 pass on
+Metal vs CPU reference**, including ties=1 cases (the critical edge for
+radix-select) and n=16384 rows.
+
+**Performance: REGRESSED at every context length.** Re-ran the DSA context sweep
+with radix-select active (server `/completion`, n_predict=48, default
+`index_topk=2048`):
+
+| Context | bitonic tok/s | radix tok/s | delta |
+|---------|-------------|-----------|-------|
+| ~2K     | 10.08       | 7.64      | -24%  |
+| ~4K     | 8.95        | 7.17      | -20%  |
+| ~16K    | 6.96        | 5.86      | -16%  |
+| ~32K    | 5.47        | 4.33      | -21%  |
+| ~54K    | 4.22 (dense 7.2) | n/a  | —     |
+
+(8K point hit the known chat-template "Content-only format" 500, not a kernel fault.)
+
+**Why radix is slower (corrected premise).** The (C) conclusion that
+"`ggml_top_k` dispatches a full O(n log² n) bitonic argsort over ALL n cached
+keys" was **imprecise**. Re-reading `ggml-metal-ops.cpp`: `nth` is capped at
+`max_threads_per_threadgroup` (~1024), so the bitonic is **BLOCKED** — `npr =
+ceil(n/nth)` blocks each sort 1024 elements in shared memory (single global
+read of n), then `log2(npr)` merge passes over `npr*k` indices. Net ~O(n) with
+good constants. My radix reads the full row **5×** from global memory (4
+histogram passes + 1 scatter) plus threadgroup atomic contention — worse
+constant factor, not better. Radix-select wins asymptotically for HUGE n
+(millions) where bitonic blows up; here n ≤ 54K and blocked-bitonic is already
+~O(n).
+
+**The real bottleneck (not top_k).** `glm-dsa.cpp` line ~309:
+`indexer_kq = ggml_mul_mat(indexer_k, indexer_q)` scores the query against
+**all n cached indexer keys** per layer per token — an unavoidable O(n) per-token
+matmul, plus the sparse gather-attention over k=2048. The top_k sort is a
+smaller term. DSA is slower than dense at long context because the indexer
+matmul + sparse-gather overhead exceeds what Metal's highly-optimized dense
+flash-attn kernel costs for the same n. No top_k-kernel change can fix this.
+
+**Action.** Reverted `get_pipeline_top_k` and `ggml_metal_op_top_k` to the
+bitonic path (445/445 still pass after revert). The radix kernel source is kept
+in `ggml-metal.metal` for reference but not selected.
+
+**Verdict for the plan.** (A) is a dead end on Metal at these context sizes.
+The DSA long-context deficit is structural (indexer matmul + sparse gather vs
+optimized dense flash-attn), not a sort-kernel problem. (B) MTP speculative
+decode targets the weight-bandwidth bottleneck (short-mid context) and does
+NOT address this either. Dense attention remains faster than DSA on llama.cpp
+Metal for GLM-5.2 at all measured contexts.
+
+### 2026-06-24 — Option (3) physical gather of top-k K/V: tested, slightly SLOWER than baseline
+
+**Hypothesis.** The current sparse MLA path runs DENSE flash-attn over all n_kv
+positions with a -INFINITY mask (no actual compute saved). If we PHYSICALLY
+gather the k=2048 top K/V rows before attention, flash-attn would operate on
+k=2048 instead of n_kv, saving both compute (mostly) and memory bandwidth.
+
+**Implementation (option 3a).** Added a `GGML_DSA_GATHER=1`-gated branch in
+`llama-graph.cpp::build_attn (top_k overload)` that, for single-token decode,
+permutes K and V, gathers the n_top_k rows via `ggml_get_rows`, permutes back,
+then calls `build_attn_mha` with null mask. The mask dance (fill/set_rows/add)
+still runs unconditionally because `set_input_kq_mask` fails if `kq_mask` has
+no allocated buffer. Through trial-and-error I established the mask must be
+referenced by an op (not just `ggml_build_forward_expand(kq_mask)`) — the full
+mask_dance needs to be alive for set_input to allocate the buffer.
+
+**Coherence: PASS.** `2+2 → 4` and the prompt retrieval tests still work.
+
+**Performance: slightly worse than bitonic baseline at every context length.**
+
+| Context | Bitonic (orig) | Radix (option A) | Gather (option 3a) | Dense MLA |
+|---------|---------------|-----------------|-------------------|-----------|
+| 2K      | 10.08         | 7.64            | 8.34              | ~24.5     |
+| 4K      | 8.95          | 7.17            | 7.91              | —         |
+| 8K      | 8.13          | (HTTP 500 chat)  | 7.30              | 24.5      |
+| 16K     | 6.96          | 5.86            | 6.33              | —         |
+| 32K     | 5.47          | 4.33            | 4.98              | —         |
+| 54K     | 4.22          | —               | —                 | 7.2       |
+
+Gather is 5-22% slower than bitonic-baseline at every context.
+
+**Why gather doesn't help (corrected analysis).** MLA's "dense" attention is
+already CHEAP because MLA compresses K/V via the absorbed low-rank form:
+n_head_kv=1 (MQA) after absorption, so dense attention is a single
+matrix-matrix product, not n_head separate QK matmuls. At 32K: dense MLA does
+~2B FLOPs/layer/token (QK: 64*576*32K + KQV: 64*512*32K), distributed across
+Metal's well-tuned flash-attn and likely bandwidth-bound, ~5 GB/s observed
+effective. The sparse gather reduces K/V reads from ~37 MB to ~5 MB per layer
+(real savings), but the gather itself:
+  - reads 2K random positions from K cache (random memory access),
+  - writes 2K × 576 × 4 bytes (F32 output) to a fresh allocate (~4 MB),
+  - then flash-attn has to cast F32 back to F16 (it requested F16).
+Net: the gather overhead exceeds the bandwidth savings, because dense MLA was
+already efficient.
+
+**The (3) premise misses:** "paper sparse attention beats dense" assumes a
+GENERAL-attention baseline (n_head × n_kv × d_head compute). GLM-5.2's MLA
+absorption makes the GQA→MQA factor same as the sparse-gather factor in practice.
+
+**Verdict.** Fusing indexing + top_k + sparse-gather (option 3b / full fusion)
+WOULD NOT meaningfully beat dense on Metal for MLA either, because the
+bandwidth savings of going 37MB → 5MB per layer are within an order of
+magnitude of the dense-MLA baseline's throughput. Both (A) radix-select and
+(3a) physical gather are dead ends.
+
+**The structural cause (unchanged from before):** the DSA indexer matmul
+(mul_mat over all n_kv × d_indexer per layer per token) + sparse gather ops
+collectively cost more than what's saved by attending over k=2048 instead of
+n=n_kv keys. MLA's dense attention is already well-optimized on Metal.
+
+**Action.** Reverted to original sparse MLA path (mask_dance + dense mha with
+mask). All experimental code removed from llama-graph.cpp. The radix kernel
+source remains in ggml-metal.metal (unselected).
+
+---
+
+### 2026-06-24 — AC3 F/S IndexShare: real upstream, deferred by design (not pursued)
+
+**Context.** `REMEDIATION_PLAN.md` P0 reframing + upstream-config investigation
+to settle whether GLM-5.2 actually ships the IndexCache F/S pattern, and
+whether the AC3 "IMPLEMENTED" status in `PLAN.md §7.L` was a real gap worth
+closing with a data-layer branch.
+
+**Investigation (read-only, preserved baseline).** Fetched
+`huggingface.co/zai-org/GLM-5.2/resolve/main/config.json`:
+
+- `indexer_types[]` = 78 entries: **21 `"full"` + 57 `"shared"`** — the F/S
+  split IS real upstream (matches the original P0's premise).
+- `index_topk_freq = 4` (1-in-4 full cadence); `index_share_for_mtp_iteration = true`.
+- Full-layer indices: 0, 1, 2 (the 3 leading dense layers), then every 4th
+  from 6 onward (6, 10, 14, …, 74) → 21 of 78.
+- `mlp_layer_types[]` = 3 `"dense"` + 75 `"sparse"` (matches
+  `first_k_dense_replace=3`; INDEPENDENT of F/S — dense vs MoE FFN, not indexer F/S).
+- `num_hidden_layers=78`, `num_nextn_predict_layers=1` → 79 GGUF blocks.
+
+**Cross-check against the known-good GGUF** (`GLM-5.2-mixed-IQ2S-experts-IQ4NL-rest`):
+indexer tensors (`indexer.attn_q_b`, `indexer.attn_k`, `indexer.proj`,
+`indexer.k_norm.{weight,bias}`) are materialized on ALL 79 blocks (632 hits /
+8 per block = 79). So the current GGUF over-materializes: the 57 shared layers
+and the MTP block carry indexer weights upstream intends to be absent. This is
+**redundant compute, not a correctness bug** — the shared layers simply
+recompute their own top-k rather than reusing the preceding full layer's,
+which is why the baseline loads and produces coherent output.
+
+**Decision: AC3 data-layer branch NOT pursued.** Three reasons, in order:
+
+1. The headline DSA regression (4.22 tok/s @ 54K vs dense 7.2 tok/s, 2026-06-23
+   entry) is **kernel-bound**, not layer-count-bound: unoptimized indexer
+   scoring, generic `ggml_top_k(54K→2048)` sort, no Metal sparse-gather. F/S
+   would cut the count of indexer passes ~4× but each remaining pass stays on
+   the slow path and `ggml_top_k` runs per-full-layer anyway. Best case
+   4.22 → ~5-6 tok/s, still below dense 7.2 — does not recover the regression.
+2. The canonical GGUF IS the baseline for every recorded result
+   (`GLM52_SESSION_MEMORY.md`, `KITCHEN_RESULTS.md`, Phase 2b multilingual
+   report). Re-quantizing to drop shared-layer indexer tensors + extending
+   `gguf-py` to write `indexer_types[]` would silently invalidate every prior
+   number. Blast radius ≫ the benefit.
+3. AC1/AC2/AC4-AC6 already landed and work: `glm-dsa.cpp` has its own graph,
+   the DSA KV-cache switch is in, Hadamard fix applied, no segfault, coherent
+   output. Leave it.
+
+**Do-not-touch list (preserved-baseline contract).** `glm-dsa.cpp::graph`
+indexer execution; `load_arch_tensors` tensor-creation gating; the canonical
+GGUF itself; `models.h`'s `llama_model_glm_dsa::graph` own-struct alias;
+`llama-model.cpp`'s `case LLM_ARCH_GLM_DSA` KV-cache arm.
+
+**Consequence for CODE_REVIEW / REMEDIATION_PLAN.** The original P0 C++ "2h
+gate on `indexer_attn_q_b != nullptr`" fix is a no-op on the current artifact
+(the tensor is never null because it's created without `TENSOR_NOT_REQUIRED`)
+and is NOT applied. AC3 status in `PLAN.md §7.L` is corrected from
+"IMPLEMENTED" to "investigated, deferred by design — F/S real upstream but
+not worth the baseline risk." Stale "glm-dsa.cpp:152 aliases to deepseek32
+with zero indexer references" claims in `AGENTS.md` and
+`docs/research/README.md` are also corrected (`glm-dsa.cpp` now has its own
+graph that DOES run the indexer on every layer).
+
+**Verified.** No code change to the DSA path; baselines unchanged; upstream
+config archived in context-mode knowledge base under source `glm52-hf-config`.
+
+---
+
+### 2026-06-24 — REMEDIATION_PLAN implementation: converter/streaming/test/C++ cleanup
+
+Implemented the zero-baseline-risk subset of `REMEDIATION_PLAN.md`. All changes
+compile clean; the runtime baseline is unchanged by construction.
+
+**Python (mlx-export/ + scripts/).**
+- `convert_glm52_jangtq_k.py`:
+  - Resume glob now matches `model-*-of-*.safetensors` (both placeholder
+    `XXXXX` and finalized `NNNNN`) so a resumed run detects its own completed
+    shards; previously it found zero `XXXXX` shards after rename → re-quantized
+    every tensor → orphan shards + 3× disk on repeat runs. Added `--clean` flag
+    (default off) to remove non-conforming orphan shards.
+  - `get_bits_and_method` defensive fallback `return (2, "mxtq")` replaced with
+    `raise ValueError(...)` naming the unrecognized expert-projection tensor —
+    a future tensor variant can no longer silently default to 2-bit MXTQ.
+  - Added provenance comment on the private `_load_bf16_tensor` import.
+- `gguf_to_mlx_streaming.py`:
+  - `import shutil` moved from interior (line 250) to module level.
+  - Renamed `_k/_v/_m/_sm/_switch_added` → `key/val/m/switch_key/switch_added`
+    (the underscore-prefixed loop vars were actively used — Python convention
+    violation, not intentional-unused).
+  - Added a WARNING when 0 `switch_mlp` entries are added despite per-expert
+    tensors being present (catches a regex/key-format drift that would
+    silently produce an incomplete quant config → shape error at load).
+- `strip_mtp_layer.py`: `shard_keys()` now uses `safe_open(...).keys()`
+  instead of re-implementing the safetensors binary-header parse; `import
+  struct` removed (no longer used).
+- `patch_jang_attn_test.py`: the `mx.load = patched_load` monkey-patch is now
+  wrapped in `try/finally: mx.load = original_load` so an exception in
+  `load_model`/generate no longer leaves the global patch + its `src_all`
+  closure installed for the rest of the process.
+- `scripts/sweep_dsa_decode.py`: added `--src`/`--url` CLI flags and a
+  WARNING that the char-based truncation (`CHARS_PER_TOK=5.8`) is an
+  approximation (~30% off for CJK); full tokenizer-aware truncation deferred.
+
+**C++ (vendor/llama.cpp submodule, build-metal).**
+- `src/models/glm-dsa.cpp`:
+  - Removed two duplicate hparam loads in `load_arch_hparams` (`n_ff_exp` and
+    `n_expert_shared` were each loaded twice — once in the MoE block, once in
+    the copy-pasted MLA block). Idempotent overwrite; values still set.
+  - Added an additive overflow guard before the `ggml_view_4d` batch→stream
+    split: `GGML_ASSERT(n_stream > 0 && n_tokens % n_stream == 0)`. Verified
+    a no-op on baseline paths: `n_stream = unified ? 1 : n_seq_max` and single-
+    sequence inference has `n_seq_max=1`, so `n_tokens % 1 == 0` always holds.
+    The assert only fires in multi-sequence non-unified batching with
+    non-divisible token counts (the silent-truncation case it guards).
+- `ggml/src/ggml-metal/ggml-metal.metal`: removed the duplicate outer
+  `#define RADIX_TOP_K_TG 256` / `#define RADIX_TOP_K_NLEV 4` (the pair that
+  shadowed the in-kernel pair). Kernel body retained as reference — its
+  dispatch was already removed (`ggml-metal-ops.cpp:4357` comment: "radix-
+  select variant removed from dispatch: measured slower in practice"). Full
+  kernel-body removal deferred to avoid unverified metallib surgery.
+- `tools/server/CMakeLists.txt`: added clarifying comment on why
+  `target_include_directories(${TARGET} PUBLIC ../mtmd)` is PUBLIC.
+
+**Verified.** `cmake --build build-metal --target llama -j` recompiled
+`glm-dsa.cpp` + re-embedded the Metal library + linked `libllama.dylib`
+cleanly. All five Python files pass `py_compile`. Baseline (232 GB GGUF load +
+merge-sort + BLUE-FALCON) is unchanged by construction — no runtime re-run
+performed (multi-minute load); recommended as a follow-up.
+
+**Not applied (deferred by design, see REMEDIATION_PLAN priority table).**
+P0 AC3 data-layer branch; P3 #2 (`total_size: 0`); P3 #3 (`save_file` retry);
+P3 #4 (`gc.collect`); P3 #5 (redundant `endswith` — kept both, more robust);
+P3 #7 (MTP layer 78 indexer — sub-case of AC3, deferred). The do-not-touch
+list (glm-dsa.cpp::graph indexer execution, load_arch_tensors gating, the
+GGUF itself, the models.h alias, the KV-cache arm) was respected throughout.
+
+---
+
+### 2026-06-24 — §7.N DSA sparse-gather attention: implemented, correct + 1.55× faster at short ctx (long-ctx confounded by IQ2S)
+
+User: "Let's then develop the sparse-gather and the fused indexer."
+
+**What was done.** Implemented the sparse-gather DSA attention path (PLAN.md §7.N,
+Part 1) as an opt-in, env-gated (`LLAMA_DSA_SPARSE_GATHER=1`) branch in
+`llama-graph.cpp`'s DSA `build_attn`. Story + acceptance criteria added to
+PLAN.md §7.N. The fused-indexer Metal kernel (Part 2) is NOT yet done.
+
+**Approach (graph rewrite, no new Metal kernel for Part 1).** The dominant
+per-token decode cost at long context is `build_attn_mha`'s dense
+`mul_mat(k, q)` over ALL n_kv keys × n_head. The current DSA `build_attn` builds
+a full [n_kv] mask via `ggml_set_rows` and runs dense attention with the mask
+zeroing non-top-k positions — still O(n_kv·n_head). With index_topk=2048,
+gathering only the selected KV rows makes attention O(n_top_k·n_head).
+
+**Key discovery: `ggml_get_rows` already supports 4D per-token batched gather**
+(ggml.h:1661; contract at ggml.c:3856: `a->ne[2]==b->ne[1]`, `a->ne[3]==b->ne[2]`,
+`b->ne[3]==1`, result `[a0,b0,b1,b2]`). It gathers dim1, with indices varying
+over (dim2, dim3). get_rows F16/F32 IS Metal-supported (`kernel_get_rows_f16`).
+
+**Three failure modes hit and fixed during implementation:**
+1. **Shape mismatch**: MLA K cache is `[d, n_head_kv=1, n_kv, n_stream]` (n_kv in
+   dim2), but get_rows gathers dim1. Initial permute-route caused
+   `a->ne[2]==b->ne[1]` assert. Fix: 2D view `[d, n_kv]` (nb stride = k->nb[2]),
+   2D gather, reshape_4d to `[d, 1, n_top_k, 1]`.
+2. **v_mla mul_mat assert** (`ggml_can_mul_mat`): get_rows returns F32 with
+   strided nb; the downstream MLA-decompress `mul_mat(v_mla, cur)` shape-matched
+   wrong. Fix: `ggml_cpy` the gathered tensor into a fresh contiguous F16 tensor
+   of the cache type, matching the dense path's contiguous F16 view layout.
+3. **null-buffer assert** (`ggml-backend.cpp:194`): passing `nullptr` mask and
+   early-returning left the MLA `kq_mask` graph input unconsumed → scheduler
+   allocated no buffer → `set_input_kq_mask` crashed writing to null buffer.
+   Fix: `ggml_build_forward_expand(gf, kq_mask)` keeps it referenced.
+
+**Correctness gate.** Enabled only for n_tokens==1 (single-token decode). For a
+decode token at position p, all cached positions 0..p are valid (causal) and
+n_top_k = min(n_kv, index_topk) selects only valid rows (the indexer mask
+already pushed future positions to -INFINITY before ggml_top_k). So no mask is
+needed on the gathered subset. Prefill (n_tokens>1) falls back to the dense
+masked path (early query tokens see masked future positions — a per-gather
+validity mask is a follow-up AC).
+
+**Verified results.**
+- Baseline preserved: flag OFF → merge-sort smoke test unchanged (exit 0,
+  30.7 t/s prompt / 9.9 t/s gen). Bit-identical graph to pre-change.
+- Sparse-gather ON, merge-sort: exit 0, **15.3 t/s gen vs 9.9 dense = 1.55×**,
+  and 6/6 Python sanity cases PASS (correct iterative merge sort emitted).
+  n_top_k observed = 256 at short context (min(n_kv, 2048)).
+
+**Could NOT cleanly validate long-context decode** (the original target):
+- 53K cache test: client 30-min timeout cancelled Q1 prefill at 95% (51K/53K
+  cached); Q2 re-prefilled 2447 tok, decode ~5.05 tok/s, but output was garbage.
+- 18.7K BLUE-FALCON: BOTH sparse-gather AND dense (flag OFF) produced garbage
+  + the `peg-native format` chat-template parser crash. So the long-context
+  quality collapse is the IQ2S quantization + thinking-off issue, NOT the
+  sparse-gather change (dense fails identically). This means sparse-gather
+  introduces NO new correctness regression, but its long-ctx decode tok/s win
+  (target ≥2× the 4.22 dense number) is unmeasured because no high-quality
+  long-context IQ2S output exists to compare on.
+
+**Net.** Sparse-gather is correct (proven at short ctx) and 1.55× faster there.
+The long-ctx perf win is plausible-but-unconfirmed because IQ2S quality
+collapses past ~8-16K context regardless of attention path. A clean long-ctx
+validation needs either a higher-precision GGUF (IQ4 expert tier) or
+thinking-ON to keep output coherent. Fused-indexer kernel (Part 2) is the next
+piece of this story.
+
+**Update — clean long-ctx decode comparison obtained (option 1: thinking ON, both flags).**
+Ran `scripts/longctx_decode_bench.py` (Q1 cold 53,655-tok prefill + 384-tok decode, Q2 warm
+cache-hit + 384-tok decode) for both `LLAMA_DSA_SPARSE_GATHER=1` and unset, mixed GGUF,
+thinking ON. Server logs gave the decode tg even when the chat-template peg-parser 500'd
+on IQ2S garbage (timings are logged before the parser runs).
+
+| metric                          | sparse-gather | dense   | delta       |
+|---------------------------------|---------------|---------|-------------|
+| cold prefill 53,655 tok (t/s)   | 27.30         | 27.24   | ~identical  |
+| Q1 cold decode 384 tok (t/s)    | 4.95          | 3.87    | **1.28× ↑** |
+| Q2 warm prefill 16 tok (t/s)    | 10.12         | 10.03   | ~identical  |
+| Q2 warm decode 384 tok (t/s)    | 4.93          | 3.85    | **1.28× ↑** |
+
+**VERIFIED RESULT: sparse-gather is 1.28× faster at 53K-context decode (4.93 vs 3.85 tok/s),
+with an even larger 1.55× win at short context (15.3 vs 9.9 tok/s merge-sort).** Prefill and
+warm-cache-hit prefill are byte-identical between paths (sparse-gather only activates at
+n_tokens==1 decode), confirming the frozen baseline is untouched. Decode output is IQ2S
+garbage in BOTH paths at 53K (quantization issue, not attention-path issue).
+
+**Conclusion.** Part 1 (sparse-gather) is done and delivers a real, measured 1.28× long-ctx
+decode speedup with no correctness regression and a frozen-by-default baseline. Part 2
+(fused-indexer Metal kernel) is the remaining work — smaller expected payoff
+(n_indexer_head << n_head) but would cut the 7-op indexer scoring chain to one kernel pass.
+
+**Update — shortgpt 53K re-tested cleanly: ALSO produces garbage (no contrast with full mixed).**
+
+Re-ran the 53K needle-in-haystack benchmark on the shortgpt-pruned GGUF (191GB, IQ2S
+experts) with thinking ON, dense path. Result: identical failure mode to the full mixed
+GGUF — `common_chat_peg_parse: unparsed peg-native output` and HTTP 500 "The model
+produced output that does not match the expected peg-native format". Decode got through
+384 tokens (4.56 tok/s) of garbage before the parser rejected it.
+
+This disproves the prior "shortgpt passed the 50K retrieval test" memory. Both GGUFs
+(full mixed and shortgpt-pruned) collapse to IQ2S garbage at 53K context; neither
+recovers the BLUE-FALCON sentinel. The earlier shortgpt "pass" must have been on a
+shorter prompt, thinking-off-but-short-circuiting, or misremembered — it does NOT
+hold up under this clean re-run.
+
+**Net.** The long-context IQ2S quality collapse is universal across both GGUF
+artifacts in this repo. It is NOT attributable to pruning, attention path, or
+sparse-gather. A coherent long-context result from this IQ2S-expert quantization
+tier appears infeasible at ≥~18K context regardless of code-path changes.

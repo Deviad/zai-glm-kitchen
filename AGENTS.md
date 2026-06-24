@@ -240,10 +240,14 @@ Current REAP37 MLX status:
 
 If a task mentions implementing the DSA lightning indexer forward pass, the F/S
 (full/shared) IndexShare layer pattern, CSA, or otherwise making GLM-5.2
-actually run DSA correctly (vs. the current native behavior where stock
-`mlx_lm.models.glm_moe_dsa` subclasses `deepseek_v32.Model` with no IndexShare
-forward path, and stock `llama.cpp` `glm-dsa.cpp:152` aliases to
-`deepseek32::graph` with zero indexer references) — read the PDFs in:
+actually run DSA correctly — note that as of 2026-06-24 the `glm-dsa.cpp`
+submodule DOES run its own DSA graph (lightning indexer + `ggml_top_k` on every
+layer; AC1/AC2/AC4-AC6 landed), and the F/S IndexShare pattern is CONFIRMED
+real upstream (`config.json` carries `indexer_types[]` = 21 full / 57 shared).
+The remaining gap is the F/S gating itself (AC3), deferred by design per
+REMEDIATION_PLAN.md §P0 (kernel-bound regression + baseline-preservation).
+Stock `mlx_lm.models.glm_moe_dsa` still subclasses `deepseek_v32.Model` with no
+IndexShare forward path. For the mathematical ground truth read the PDFs in:
 
 ```text
     docs/research/papers/   (arXiv PDFs, fetched 2026-06-21, ~10 MB total)
