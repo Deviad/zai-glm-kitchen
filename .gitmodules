@@ -9,3 +9,12 @@
 [submodule "vendor/mlx-lm"]
 	path = vendor/mlx-lm
 	url = https://github.com/ml-explore/mlx-lm.git
+
+[submodule "vendor/jangq"]
+	path = vendor/jangq
+	url = https://github.com/jjang-ai/jangq.git
+	branch = main
+[submodule "vendor/vmlx"]
+	path = vendor/vmlx
+	url = https://github.com/jjang-ai/vmlx.git
+	branch = main
