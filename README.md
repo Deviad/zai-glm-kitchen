@@ -18,8 +18,10 @@ translation only.
 | `vendor/gguf2mlx` | `Deviad/gguf2mlx` @ `feature/update_for_glm5.2_cooking` | `from gguf2mlx import convert` — end-to-end GGUF→MLX translator, used for the Phase 8 MLX conversion step |
 | `vendor/llama.cpp` | `Deviad/llama.cpp` @ `feature/patch_used_to_create_mixed_quantization_of_glm5.2` | patched `llama-cli`, `llama-quantize`, `llama-trace-moe` binaries; trace-moe example + BI computation needed by every trace run + the mixed-precision `quant_glm52_mixed.sh` |
 | `vendor/mlx-lm` | `ml-explore/mlx-lm` @ `main` (`2c008fd…`, v0.31.3-13-g2c008fd) | **reference-only** upstream `mlx-lm` Apple MLX LM library; `mlx_lm/models/glm_moe_dsa.py` (53-line subclass of `deepseek_v32.Model`) + `mlx_lm/models/deepseek_v32.py` (the actual MLA+DSA+IndexShare forward graph; site of the documented IndexShare blocker in `REAP37_EXPERIMENTS.md`). Not built/imported by the kitchen — vendored so the GLM-5.2 MLX-side code is greppable alongside the other sources. |
+| `vendor/jangq` | `jjang-ai/jangq` @ `main` (`e70f220…`, depth 1) | JANGTQ TurboQuant runtime — `jang_tools.load_jangtq`, per-model JANGTQ converters, MXTQ Metal kernels (`jang-runtime/Sources/JANGCoreMetal/`). Vendored so the JANGTQ_K converter + vMLX speed/quality work is scannable/patchable; read-only upstream (fork only if upstreaming a patch). |
+| `vendor/vmlx` | `jjang-ai/vmlx` @ `main` (`b7da1b8…`, v1.5.69, depth 1) | vMLX engine — `vmlx_engine.cli/server/jang_loader` + `model_configs.py` (glm5 family + `cache=mla` registration). The server used to serve the JANGTQ_K MLX bundle (`vmlx-serve serve ... --port 8082`). Read-only upstream. |
 
-Both are pinned to the tip of their respective fork feature branches; after a
+The two Deviad forks are pinned to the tip of their respective fork feature branches; after a
 fresh clone, run:
 
 ```sh
@@ -57,7 +59,9 @@ zai-glm-kitchen/
 - [`AGENTS.md`](AGENTS.md) — contract: how findings get tracked, what counts
   as a durable finding, where operational binaries live.
 - [`LOCAL_SETUP.md`](LOCAL_SETUP.md) — submodule init + env vars
-  (`LLAMA_CPP_DIR`, `MODEL_DIR`, `REAP37_MODEL_DIR`) + how to set them locally.
+  (`LLAMA_CPP_DIR`, `MODEL_DIR`, `REAP37_MODEL_DIR`) + how to set them locally,
+  plus a [JANGTQ_K (MLX) quantize + run](LOCAL_SETUP.md#quantize--run-glm-52-with-jangtq-k-mlx-path)
+  section covering the alternative MLX/vMLX stack.
 - [`PLAN.md`](PLAN.md) — GLM-5.2 `glm-dsa` converter feature plan (the
   converter implementation itself lives at `vendor/gguf2mlx`, see submodules).
 - [`GLM52_SESSION_MEMORY.md`](GLM52_SESSION_MEMORY.md) — 3,751-line canonical

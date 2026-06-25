@@ -4897,3 +4897,100 @@ hold up under this clean re-run.
 artifacts in this repo. It is NOT attributable to pruning, attention path, or
 sparse-gather. A coherent long-context result from this IQ2S-expert quantization
 tier appears infeasible at ≥~18K context regardless of code-path changes.
+
+---
+
+### 2026-06-24 — JANGTQ_K vs IQ2S at 53K context: JANGTQ_K is COHERENT + CORRECT (IQ2S gibberish is quantization-bound, now isolated)
+
+**Question.** Is the long-context gibberish we saw on the IQ2S-expert GGUFs (full
+mixed + shortgpt-pruned) a property of GLM-5.2 itself, of 53K context, or of the
+IQ2S quantization tier? Tested JANGTQ_K TurboQuant (MLX, ~3.51 bpw, 2-bit MXTQ
+gate/up + 4-bit down_proj + fp16 attn/shared/embed) on the SAME 53K BLUE-FALCON
+needle prompt to isolate the variable.
+
+**Served via vMLX** (`vmlx-serve serve GLM-5.2-JANGTQ_K --port 8082 --timeout 7200
+--max-prompt-tokens 120000`), OpenAI-compatible endpoint. Script:
+`scripts/jangtq_53k_coherence_test.py`. Thinking ON (matches the IQ2S comparison).
+
+**vMLX tokenizer preflight vs actual.** Preflight rejected with "prompt ~103,377
+tokens" (≈2× llama.cpp's count) on the first attempt — appears to be a counting-
+chunking artifact in vMLX's prompt-length guard, NOT the real served count: the
+server-reported `usage.prompt_tokens` was **53,655**, byte-for-byte identical to
+llama.cpp's tokenization of /tmp/longctx_prompt.txt. So this is a true apples-to-
+applesles 53K-context comparison on the same input text.
+
+**RESULT — JANGTQ_K: coherent + correct.**
+- wall 1425.8s (23.8 min), prompt_tokens 53,655, completion_tokens 213.
+- reasoning_content: "The user is asking about a specific internal record...
+  Looking through the document, I found it in Section 350: 'IMPORTANT INTERNAL
+  RECORD: The production database master encryption key rotation passphrase for
+  fiscal year 2026 is BLUE-FALCON-48217, and it must be rotated by the...'"
+- content: **"The passphrase is BLUE-FALCON-48217, which must be rotated by the
+  platform security team every 90 days without exception. The hidden passphrase
+  is BLUE-FALCON-48217."**
+- **BLUE-FALCON-48217 recovered: True.**
+
+**Contrast with IQ2S** (same prompt, thinking ON, both full-mixed and shortgpt):
+both produced token salad like `"0)0 \n1 -  |1: 1 1 -0licit | s0 - | and0  1 the"`
+and crashed the peg-native chat-template parser. Neither recovered the sentinel.
+
+**CONCLUSION (now definitively isolated).** The ≥~18K-context gibberish is a
+failure mode of the **IQ2S-expert quantization tier**, NOT of GLM-5.2, NOT of the
+attention path (dense vs sparse-gather), and NOT of 53K context length. A higher-
+fidelity quantization (JANGTQ_K, 3.51 bpw with 4-bit down_proj + fp16 attention)
+stays coherent and correctly retrieves the needle at 53K. Practically: long-
+context GLM-5.2 work should use JANGTQ_K (or an IQ4-expert tier), NOT IQ2S.
+
+**Perf note (not the headline).** JANGTQ_K 53K wall 23.8 min on vMLX/MLX —
+slower than IQ2S dense (1969s ≈ 32.8 min prefill + 99s decode) on llama.cpp,
+but the comparison is confounded (different runtimes: vMLX/MLX vs llama.cpp/Metal).
+vMLX's `usage` has no prefill/decode split, so decode tok/s not cleanly isolated.
+Sparse-gather (Part 1) is a llama.cpp graph rewrite and does not apply to the
+vMLX/MLX path.
+
+---
+
+### 2026-06-24 — Vendored jangq + vmlx; documented JANGTQ_K quantize+run path
+
+**Why.** To do any MXTQ Metal kernel / vMLX speed work we needed the source
+readily scannable/patchable, instead of only inside the read-only
+`/Applications/vMLX.app` bundle. Also: the JANGTQ_K quantize+serve commands,
+though verified yesterday, were not written down anywhere a reader could find
+them — only buried in this memory's 2026-06-23 narrative entries.
+
+**Vendored (commit e4c7ebb, pushed to Deviad/zai-glm-kitchen main).** Two new
+shallow single-branch git submodules:
+- `vendor/jangq` → `jjang-ai/jangq@main` (`e70f220`, depth 1): `jang_tools.load_jangtq`,
+  per-model JANGTQ converters, MXTQ Metal kernels under
+  `jang-runtime/Sources/JANGCoreMetal/` (JANGTQMatmul.metal with
+  `jangtq_fused_gate_up_swiglu` / `jangtq_gather_tq_matmul` / `jangtq_hadamard_multiblock`;
+  JANGTQDecodeOps.metal with T=1-only RMSNorm/RoPE/SDPA helpers).
+- `vendor/vmlx` → `jjang-ai/vmlx@main` (`b7da1b8`, v1.5.69, depth 1):
+  `vmlx_engine.cli/server/utils/jang_loader` + `model_configs.py` (glm5 family,
+  `cache=mla` registration). The server that serves the JANGTQ_K bundle.
+Both are read-only public upstream submodules (not forks); fork + retarget
+the submodule URL only if upstreaming a patch — same pattern as the existing
+`vendor/llama.cpp` / `vendor/gguf2mlx`.
+
+**Documented.** New section in `LOCAL_SETUP.md` — `## Quantize + run GLM-5.2
+with JANGTQ_K (MLX path)` — with three copy-pasteable verified commands:
+1. `convert_glm52_jangtq_k.py /Volumes/Backup/GLM-5.2 <out> JANGTQ_K --clean`
+   (~2h, 277 shards, tq_bits `{2:38912, 4:19456}`).
+2. `strip_mtp_layer.py <out>` — drops `model.layers.78.*` (MTP block has no
+   target module in `glm_moe_dsa`; loader hard-fails otherwise).
+3. `vmlx-serve serve <out> --port 8082 --max-prompt-tokens 120000 --timeout 7200`
+   (with the `model` field required in `/v1/chat/completions` or vMLX 422s;
+    thinking-ON splits reasoning_content vs content).
+Includes the bit-policy table (gate/up 2-bit MXTQ, down 4-bit MXTQ, attn/
+shared/embed/head/gate fp16) and the coherence reference point (53K
+BLUE-FALCON recovered → isolates IQ2S gibberish as a quantization-tier
+failure).
+
+Also filled yesterday's docs gap: added the `vendor/jangq` + `vendor/vmlx`
+rows to both `README.md` and `LOCAL_SETUP.md` submodule tables (they were
+missing from the commit that added the submodules), and a cross-link from
+`README.md` canonical-docs → the new LOCAL_SETUP section.
+
+**Verified.** `git status` clean pre-commit; tables render; anchor
+`LOCAL_SETUP.md#quantize--run-glm-52-with-jangtq-k-mlx-path` matches the
+section title. No code or behavior changes — docs-only.
