@@ -16,5 +16,5 @@
 	branch = main
 [submodule "vendor/vmlx"]
 	path = vendor/vmlx
-	url = https://github.com/jjang-ai/vmlx.git
-	branch = main
+	url = git@github.com:Deviad/vmlx.git
+	branch = feature/mla-prefix-cache-fix

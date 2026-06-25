@@ -235,24 +235,46 @@ rewrites `model.safetensors.index.json`. Leaves `config.json`'s
 
 ### 3. Serve + query (vMLX, OpenAI-compatible)
 
+Requires a **one-time patch install** into the bundled vMLX (enables the MLA
+prefix cache — without it, warm turns re-prefill the entire prefix every
+request; see §"MLA prefix-cache patch" below):
+
+```sh
+# One-time: install the patched prefix_cache.py into the bundled vMLX
+SITE=/Applications/vMLX.app/Contents/Resources/bundled-python/python/lib/python3.12/site-packages/vmlx_engine
+cp "$(pwd)/vendor/vmlx/vmlx_engine/prefix_cache.py" "$SITE/prefix_cache.py"
+# Re-run this after any vMLX app update (updates overwrite site-packages).
+```
+
+Then serve (note `--use-paged-cache` — required for the MLA prefix cache):
+
 ```sh
 /Applications/vMLX.app/Contents/Resources/bundled-python/python/bin/vmlx-serve serve \
   "/Volumes/Data NVME/GLM-5.2-MLX/GLM-5.2-JANGTQ_K" \
   --host 127.0.0.1 --port 8082 \
   --served-model-name glm52-jangtq-k \
   --max-num-seqs 1 --max-tokens 1024 --max-prompt-tokens 120000 \
-  --timeout 7200
+  --timeout 7200 \
+  --use-paged-cache
 ```
 
+For development against the vendored source without installing, prefix the
+command with
+`PYTHONPATH="/Volumes/Data NVME/GLM-5.2-kitchen/vendor/vmlx"`.
+
 Flags that matter:
+- `--use-paged-cache` — **required** for MLA prefix-cache hits. The default
+  memory-aware cache does full-key matching and misses the coding-agent
+  pattern (long stable prefix + varied short question), so every warm turn
+  re-prefills. The paged cache (block_size=64) matches shared prefixes with
+  diverging suffixes and skips the cached prefill on warm turns.
 - `--timeout 7200` (2h) — default 300s is too low for long-context prefill;
   a cold 53K-prompt request takes ~20+ min.
 - `--max-prompt-tokens 120000` — needed for 53K-context tests (vMLX's preflight
-  guard rejects otherwise; note vMLX's preflight token count can read ~2× the
-  real count on some prompts, but the served `usage.prompt_tokens` is correct).
-- Prefix cache is on by default ("KV cache auto mode: TurboQuant enabled;
-  stored prefix cache quantization=q4") — a warm repeat of the same 53K prefix
-  skips prefill and drops to decode-only wall time.
+  guard rejects otherwise).
+- KV-cache quantization is auto-disabled for MLA models (MLA stores compressed
+  latents that shouldn't be further quantized) — do not pass
+  `--kv-cache-quantization`.
 
 Quick query — **the `model` field is required** (vMLX returns HTTP 422
 otherwise):
@@ -276,13 +298,42 @@ written — either raise `max_tokens`, or pass
 - **Short context**: coherent. Correct merge sort, 17×23=391, `is_prime`
   textbook wheel, multi-turn recall — ~9-10 tok/s gen.
 - **53K long context** (BLUE-FALCON needle, thinking ON): **correct** — recovers
-  `BLUE-FALCON-48217` from "Section 350" of the prompt, wall ~23.8 min. This is
-  the result that isolates the IQ2S GGUF gibberish as a quantization-tier
-  failure, not a model / context-length / attention-path failure. See
-  `GLM52_SESSION_MEMORY.md`, 2026-06-24 JANGTQ_K-vs-IQ2S 53K entry.
+  `BLUE-FALCON-48217` from "Section 350" of the prompt. **Cold wall ~23.4 min**
+  (prefill ~39 tok/s + decode ~6.9 tok/s); **warm wall ~60 s** (decode-only,
+  prefix cache hit with `--use-paged-cache` + the patch) = **~24× speedup** on
+  repeated coding-agent turns. This is the result that isolates the IQ2S GGUF
+  gibberish as a quantization-tier failure, not a model / context-length /
+  attention-path failure. See `GLM52_SESSION_MEMORY.md`, 2026-06-24 JANGTQ_K-vs-IQ2S 53K entry and the 2026-06-24 MLA prefix-cache-patch entry.
 
-> ⚠️ Throughput is lower than the GGUF/llama.cpp stack (~9-10 tok/s short-ctx gen
-> vs ~22-24 tok/s for shortgpt-pruned IQ2S GGUF). Speed work is scoped but not
-> yet done — levers in priority order: vMLX `--prefill-batch-size` / prefix-cache
-> tuning (free, no Metal), then MXTQ kernel OPT re-sweep, then extending the
-> T=1 decode-helper kernels to batched T>1. See the MXTQ shader-exploration plan.
+### MLA prefix-cache patch (vendor/vmlx)
+
+The bundled vMLX `BlockAwarePrefixCache` had two bugs that together made the
+MLA paged prefix cache unusable for GLM-5.2 (every warm turn re-prefilled):
+
+1. **Store side** (`_extract_block_tensor_slice`, CacheList positional
+   sub-cache branch): when a positional sub-cache had `seq_len==0` for a block
+   (the legitimate MLA case where a layer's secondary head group accumulated
+   zero tokens — live kshape `[.,.,0,feat]`), the store emitted `("skip",)`.
+   Reconstruct then saw the sub as all-skip and aborted. **Fix:** store an
+   empty zero-seq slice `[..., start:0, :]` instead, which preserves the
+   feature dim and lets the standard `"kv"` rebuild path produce a real
+   (non-None) empty KVCache matching the live state.
+2. **Reconstruct side** (CacheList KV rebuild padding): MLA's compressed
+   latent has **asymmetric k/v feature dims** (e.g. k ends in 64, v in 512).
+   The padding code derived `pad_shape` from `ck.shape` and reused it for
+   `v_pad`, crashing `mx.concatenate` when `offset % step != 0`. **Fix:**
+   build pad shapes per-tensor (`k_pad_shape` from `ck.shape`, `v_pad_shape`
+   from `cv.shape`).
+
+The patch is in `vendor/vmlx/vmlx_engine/prefix_cache.py` (git submodule at
+`b7da1b8` + the two-hunk diff). The bundled-site-packages copy is the runtime
+path; reinstall it after any vMLX update. Both fixes are opt-in via
+`--use-paged-cache` (default server runs are unaffected).
+
+> ⚠️ Decode throughput (~6.9 tok/s) and cold prefill (~39 tok/s) are both lower
+> than the GGUF/llama.cpp stack. But the MLA prefix-cache patch makes **warm
+> turns decode-only** (~60 s at 53K), so repeated coding-agent turns
+> (Architect/Reviewer with a stable long prefix) are fast regardless of the
+> cold-start numbers. Remaining speed levers: vMLX `--prefill-batch-size`
+> sweep (cold prefill only), MXTQ kernel OPT re-sweep, T>1 decode helpers.
+> See `JANGTQ_K_SPEED_PLAN.md`.

@@ -4994,3 +4994,143 @@ missing from the commit that added the submodules), and a cross-link from
 **Verified.** `git status` clean pre-commit; tables render; anchor
 `LOCAL_SETUP.md#quantize--run-glm-52-with-jangtq-k-mlx-path` matches the
 section title. No code or behavior changes — docs-only.
+
+---
+
+### 2026-06-24 — JANGTQ_K speed diagnosis: prefill 39 t/s; vMLX prefix cache BROKEN for GLM-5.2 MLA (coding-agent blocker)
+
+**Goal.** User wants JANGTQ_K usable for coding agents (Architect/Reviewer) at
+~100K context, where the usage pattern is a long stable prefix (system + codebase
++ docs) submitted repeatedly with varied short questions. Needed the
+prefill/decode split + whether prefix cache helps. Plan file:
+`JANGTQ_K_SPEED_PLAN.md` (US-A/B/C/D). All measured on the 53K BLUE-FALCON
+prompt via vMLX `--port 8082`.
+
+**Clean perf split (measured).**
+- Short-prompt decode (21 prompt tok, thinking off, 68 completion tok, 9.9s):
+  **decode = 6.88 tok/s** (context-independent — MLA attention amortizes).
+- 53K req 1 cold: 53655 prompt tok + 208 decode, wall 1383.7s. With decode at
+  6.88 t/s (208 tok ≈ 30s), prefill ≈ 1354s → **prefill = 39.6 tok/s**
+  (~97% of wall at 53K). At 100K context this scales to ~43 min prefill/turn.
+- Yesterday's "0.15 tok/s" in memory was a bugged calc (decode tokens ÷
+  total wall including prefill). Real numbers above.
+
+**Finding 1 — memory-aware prefix cache (default) cannot serve the
+coding-agent pattern.** `MemoryAwarePrefixCache.fetch` does exact + forward +
+reverse prefix matching, but only matches when one key is a *prefix* of the
+other. Our prompt = `[53K corpus] + "\n\nQuestion: [Q]"`; the varying question
+is at the END, so two different questions' cache keys diverge *within* the
+question text — neither is a prefix of the other → no match. Verified in the
+log: req 1 stored 53652 cache-key tokens, req 2 (53656, shared 53652 prefix)
+logged "cache miss, processing all 53656 tokens." **Every varied question =
+full re-prefill.** Flat full-key cache by design; needs block-granularity
+storage to handle shared-prefix/diverged-suffix.
+
+**Finding 2 — `--use-paged-cache` MATCHES correctly but MLA reconstruction
+fails (vMLX bug).** Enabled paged cache (block_size=64, max_tokens=64000).
+Log shows the fundamental fix works:
+`"paged cache hit for chatcmpl-…: 838 blocks, 53632 tokens, 24 remaining to
+process"`. Then immediately:
+`"worker-side paged cache reconstruction failed, treating as cache miss"` →
+full re-prefill anyway (warm wall 1409.6s ≈ cold 1383.7s).
+
+**Root cause of reconstruction failure.** `BlockAwarePrefixCache.reconstruct_cache`
+(`vmlx_engine/prefix_cache.py:2974`) returns None for the MLA CacheList block
+layout. Telltale log line at load: *"TurboQuant skipped: MLA model uses
+CacheList (incompatible with TQ flat cache)."* MLA's compressed-latent KV is
+stored as a CacheList; the paged reconstruct path's MLA/CacheList branch (validator
+`cache_record_validator.py` + the `cache_list` tag handling in reconstruct_cache)
+doesn't successfully rebuild it. This is a vMLX code bug in the MLA
+paged-reconstruct path, NOT a config flag.
+
+**Implication for the user's coding-agent workload.** Until the reconstruct bug
+is patched, JANGTQ_K at long context re-prefills the entire prefix on every
+turn (~23 min at 53K, ~43 min at 100K). Unusable as-is for Architect/Reviewer
+agents. Decode (6.88 t/s) is fine; prefill repeat-every-turn is the killer.
+
+**Levers now ranked.**
+1. **Patch vMLX MLA paged-reconstruct** (`vendor/vmlx` `prefix_cache.py` +
+   `cache_record_validator.py`) — the real fix; makes warm turns decode-only
+   (~6.88 t/s = seconds). Real engineering effort; needs understanding the MLA
+   CacheList block layout. This is now the top-priority speed lever.
+2. **prefill_batch_size sweep (US-C)** — tunes prefill throughput (39 → maybe
+   50 t/s). Deprioritized: doesn't fix the repeat-every-turn problem; only
+   helps if reconstruct bug is unfixable and cold-start throughput matters.
+3. **Fall back to GGUF/llama.cpp runtime** — has a working prefix cache
+   (measured 1000× warm-vs-cold on llama.cpp), but IQ2S quality collapses at
+   ≥18K. Would need a smarter GGUF quant (down_proj → IQ4_NL) for long-ctx
+   quality AND a working prefix cache. Separate, larger track.
+
+**Status.** vMLX server stopped. `JANGTQ_K_SPEED_PLAN.md` US-A done (split
+measured + cache broken — root-caused); US-B (coding-question prompt) skipped
+— prefill is content-independent so the BLUE-FALCON prompt is a valid perf
+proxy; US-C (prefill_batch sweep) deferred pending user decision on whether
+to pursue the reconstruct patch first; US-D decision: the reconstruct patch is
+the go-forward lever, not prefill_batch_size.
+
+---
+
+### 2026-06-24 — Patched vMLX MLA paged prefix cache: warm 53K turn ~1404s → ~60s (24×)
+
+**Goal.** Make JANGTQ_K usable for coding-agent workloads (Architect/Reviewer at
+~100K context: long stable prefix + varied short questions). 2026-06-24 split
+measurement showed prefill ~39 tok/s (~97% of wall at 53K) and the default
+memory-aware prefix cache MISSING every warm turn (full-key match can't handle
+shared-prefix/diverged-suffix). Switching to `--use-paged-cache` MATCHED
+correctly (838 blocks, 53632 tokens hit) but `reconstruct_cache` returned None
+→ full re-prefill anyway. This entry is the root-cause + fix of that bug.
+
+**Failure traced via instrumentation + short-prompt repro** (reconstruct code
+path is token-count-independent, so a 480-token cold+warm pair exercised the
+same MLA reconstruct code in ~9 s instead of 23 min):
+
+1. **Pad-shape bug (ValueError).** In `BlockAwarePrefixCache.reconstruct_cache`,
+   the CacheList KV sub-rebuild padding derived `pad_shape` from `ck.shape`
+   and reused it for both `k_pad` and `v_pad`. MLA's compressed-latent KV has
+   **asymmetric k/v feature dims** (layer 0 sub 0: k `[1,1,469,512]`, v
+   `[1,1,469,64]`). When `offset % step != 0`, the v_pad built from ck's shape
+   (`[1,1,pad,512]`) crashed `mx.concatenate` against cv (`[1,1,448,64]`).
+   **Fix:** `k_pad_shape=list(ck.shape)` and `v_pad_shape=list(cv.shape)`,
+   built per-tensor.
+
+2. **All-skip sub-cache abort (the real blocker).** After fix 1, a LAYER-SPECIFIC
+   failure remained: FAIL#5 at **layer 3** (not layer 0 — the per-layer store
+   structure differs). Layer 0 sub 1: `KVCache kshape=[1,1,469,128]` (seq_len
+   469 → stored `"kv"`). Layer 3 sub 1: `KVCache kshape=[1,1,0,128]`
+   (**seq_len 0** — an MLA layer whose secondary head group accumulated zero
+   tokens for the prefix by design). The store path's CacheList positional
+   sub branch emitted `("skip",)` whenever `start_idx >= actual_end`, and
+   `actual_end = min(end_idx, seq_len=0) = 0`, so layer 3 sub 1 was `"skip"`
+   in ALL 838 blocks. Reconstruct's CacheList elif chain then hit the
+   `else: return None` for that sub → **aborted the WHOLE reconstruct** →
+   scheduler fell back to full re-prefill. **Fix (store side):** when a
+   positional sub-cache is out-of-range, store an EMPTY zero-seq slice
+   `[..., start_idx:actual_end, :]` (preserves the feature dim) as `"kv"`/
+   `"quantized_kv"` instead of `("skip",)`. The empty array is non-None, so
+   (a) reconstruct's normal `"kv"` rebuild produces a real empty KVCache
+   matching the live state, and (b) the downstream live-cache validator
+   (`cache_record_validator._validate_tensor` accepts dim==0) passes it.
+
+**Verification (JANGTQ_K MLX, --use-paged-cache, patch installed):**
+- Short 480-token prompt: cold 7.5 s → warm 1.1 s, correct answer.
+- 53K BLUE-FALCON prompt: cold 1404.7 s (prefill 1373 s @ ~39 tok/s + decode
+  31.7 s @ 6.7 tok/s) → warm **59.6 s** (decode-only, 400 tok @ 6.71 tok/s).
+  BLUE-FALCON-48217 recovered on BOTH turns (correctness gate passed).
+  **23.6× warm-turn speedup.** Remaining ~60 s is decode-only (6.9 tok/s ×
+  400 tok) + ~24 divergent-prefix tokens + reconstruct overhead (~5–10 s for
+  838×78 tensor concatenates).
+
+**Deployment.** Patch lives in `vendor/vmlx/vmlx_engine/prefix_cache.py`
+(submodule at `b7da1b8` + two-hunk diff: store empty-slice + per-tensor pad
+shape; `scheduler.py` untouched). Installed into the bundled vMLX site-packages
+(`.../lib/python3.12/site-packages/vmlx_engine/prefix_cache.py`, original
+backed up as `prefix_cache.py.orig-backup-*)` so daily `vmlx-serve` runs pick
+it up WITHOUT needing PYTHONPATH. Reinstall after any vMLX app update.
+Both fixes are opt-in via `--use-paged-cache`; default (memory-aware cache)
+server runs are byte-identical to upstream.
+
+**Implication.** JANGTQ_K is now viable for the coding-agent workload:
+prepare the long prefix once (cold ~23 min at 53K, ~43 min at 100K), then each
+Architect/Reviewer question is a ~1 min decode-only warm turn. Part 2 / Metal
+kernel work no longer a blocker for this use case. PREFILL_BATCH_SIZE sweep
+(US-C) deprioritized — it only helps cold prefill, now the minority wall.
